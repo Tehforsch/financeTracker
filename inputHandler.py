@@ -33,21 +33,21 @@ def createManualEntry():
 def checkAccountExists(ledger, account):
     return account in ledger.accounts
 
-def createAutomaticAccount(date, originator, usage):
+def createAutomaticAccount(entry):
     decision = input("Create automatic account by originator, by usage or both?\n")
     if decision == "originator":
-        print("Originator for automatic account? (leave empty if you want to keep '{}')".format(originator))
-        automaticOriginator = inputDefault(originator)
+        print("Originator for automatic account? (leave empty if you want to keep '{}')".format(entry.originator))
+        automaticOriginator = inputDefault(entry.originator)
         automaticUsage = ""
     elif decision == "usage":
-        print("Usage for automatic account? (leave empty if you want to keep '{}')".format(usage))
-        automaticUsage = inputDefault(usage)
+        print("Usage for automatic account? (leave empty if you want to keep '{}')".format(entry.usage))
+        automaticUsage = inputDefault(entry.usage)
         automaticOriginator = ""
     else:
-        print("Originator for automatic account? (leave empty if you want to keep '{}')".format(originator))
-        automaticOriginator = inputDefault(originator)
+        print("Originator for automatic account? (leave empty if you want to keep '{}')".format(entry.originator))
+        automaticOriginator = inputDefault(entry.originator)
         print("Usage for automatic account? (leave empty if you want to keep '{}')".format(usage))
-        automaticUsage = inputDefault(usage)
+        automaticUsage = inputDefault(entry.usage)
     automaticAccount = formatAccountInput(input("Target account?\n"))
     automaticAccounts.append({
         "usage": automaticUsage,
@@ -68,7 +68,7 @@ def getAccountInput(ledger, entry):
     print(entry)
     accountInput = input()
     if accountInput == config.addAutomaticAccountString:
-        accountInput = createAutomaticAccount(date, originator, usage)
+        accountInput = createAutomaticAccount(entry)
     else:
         accountInput = formatAccountInput(accountInput)
     if not checkAccountExists(ledger, accountInput):
