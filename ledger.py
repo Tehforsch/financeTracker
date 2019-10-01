@@ -3,6 +3,8 @@ import config
 from collections import defaultdict
 import yaml
 import re
+import budget
+import logging
 
 def matchesAny(string, regexList):
     return any(re.search(pattern, string) for pattern in regexList)
@@ -33,8 +35,10 @@ class Accounts(defaultdict):
 
 class Ledger:
     def __init__(self, transactions=[]):
-        self.transactions = transactions
         self.accounts = Accounts(Decimal)
+        self.transactions = []
+        for transaction in transactions:
+            self.addTransaction(transaction)
 
     def addTransaction(self, transaction):
         self.transactions.append(transaction)
@@ -63,11 +67,20 @@ class Ledger:
 
     def printBalance(self, args):
         queryResult = self.balanceQuery(args)
-        print(queryResult)
+        logging.info(queryResult)
 
     # def printRegister(self, args):
     #     queryResult = self.registerQuery(args)
     #     print(queryResult)
+
+    def filterTransactionsByTime(self, start, end):
+        for transaction in self.transactions:
+            if (start <= transaction.date) and (transaction.date < end):
+                print(start, transaction.date, end)
+        transactionsInThatTimeFrame = [transaction for transaction in self.transactions if (start <= transaction.date) and (transaction.date < end)]
+        # for t in transactionsInThatTimeFrame:
+            # print(t)
+        return Ledger(transactionsInThatTimeFrame)
 
     def balanceQuery(self, args):
         relevantAccounts = self.getRelevantAccounts(args.balance)
@@ -76,11 +89,17 @@ class Ledger:
         return relevantAccounts
 
     def getRelevantAccounts(self, patterns):
-        if patterns == []:
+        if patterns is None or patterns == []:
             return self.accounts.copy()
         else:
             relevantAccounts = self.accounts.filter(lambda name, _: matchesAny(name, patterns))
             return relevantAccounts
+
+    def getFirstTransactionDate(self):
+        return min(transaction.date for transaction in self.transactions)
+
+    def getLastTransactionDate(self):
+        return max(transaction.date for transaction in self.transactions)
 
 # def amount_representer(dumper, data):
 #     return dumper.represent_scalar('!decimal', str(data))

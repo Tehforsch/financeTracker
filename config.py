@@ -11,3 +11,9 @@ cashAccount = "expenses:cash"
 addAutomaticAccountString = "automatic"
 
 checkingAccount = "assets:bankDiba"
+
+# budget files
+periodIdentifier = "period"
+accountsIdentifier = "accounts"
+
+defaultDateFormat = "%Y-%m-%d"
