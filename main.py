@@ -5,8 +5,6 @@ from pathlib import Path
 import argparse
 import datetime
 import config
-import logging
-
 def isoFormat(string):
     return datetime.datetime.strptime(string, config.defaultDateFormat).date()
 
@@ -44,8 +42,6 @@ def setDefaultArgs(args, ledger):
         args.start = ledger.getFirstTransactionDate()
     if args.end is None:
         args.end = ledger.getLastTransactionDate()
-
-logging.basicConfig()
 
 if __name__ == "__main__":
     args = setupArgs()

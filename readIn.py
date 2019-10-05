@@ -67,4 +67,5 @@ def getNewTransactions(ledger, entries):
 def read(ledger, args):
     for csvFile in args.read:
         entries = readEntriesFromCsvFile(args, csvFile)
+        entries.sort(key=lambda entry: entry.date)
         newTransactions = getNewTransactions(ledger, entries)

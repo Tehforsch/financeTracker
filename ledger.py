@@ -67,7 +67,7 @@ class Ledger:
 
     def printBalance(self, args):
         queryResult = self.balanceQuery(args)
-        logging.info(queryResult)
+        print(queryResult)
 
     # def printRegister(self, args):
     #     queryResult = self.registerQuery(args)

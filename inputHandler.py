@@ -46,7 +46,7 @@ def createAutomaticAccount(entry):
     else:
         print("Originator for automatic account? (leave empty if you want to keep '{}')".format(entry.originator))
         automaticOriginator = inputDefault(entry.originator)
-        print("Usage for automatic account? (leave empty if you want to keep '{}')".format(usage))
+        print("Usage for automatic account? (leave empty if you want to keep '{}')".format(entry.usage))
         automaticUsage = inputDefault(entry.usage)
     automaticAccount = formatAccountInput(input("Target account?\n"))
     automaticAccounts.append({
