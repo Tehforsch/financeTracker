@@ -14,8 +14,12 @@ def getBudgetDict(budgetFilename):
     return budgetDict
 
 def compareToBudget(ledger_, args):
-    # args.balance = [account for account in budgetDict[config.accountsIdentifier]]
     budgetDict = getBudgetDict(args.budget)
-            # for (account, amount) in budgetDict[config.accountsIdentifier].items():
-                # transaction = Transaction(amount, config.checkingAccount, account, "Budget", period[0], "Budget")
-                # periodLedger.addTransaction(transaction)
+    patterns = ["^"+account for account in budgetDict[config.accountsIdentifier]]
+    budgetLedger = ledger_.clone()
+    periods = util.subdivideTime(args.start, args.end, budgetDict[config.periodIdentifier])
+    for period in periods:
+        for (account, amount) in budgetDict[config.accountsIdentifier].items():
+            transaction = ledger.Transaction(amount, config.checkingAccount, account, "Budget", period[0], "Budget")
+            budgetLedger.addTransaction(transaction)
+    budgetLedger.printRegister(patterns, args.start, args.end, budgetDict[config.periodIdentifier])

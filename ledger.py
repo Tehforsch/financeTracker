@@ -67,9 +67,11 @@ class Ledger:
         self.accounts[transaction.sourceAccount] -= transaction.amount
         self.accounts[transaction.targetAccount] += transaction.amount
         
+    def clone(self):
+        return Ledger(self.transactions)
+
     def __str__(self):
-        sortedAccounts = sorted(self.accounts.keys())
-        return "\n".join(self.accountToStr(acc) for acc in sortedAccounts)
+        return str(self.accounts)
 
     def accountToStr(self, acc):
         return "{}:\t{}".format(acc, self.accounts[acc])
@@ -91,8 +93,8 @@ class Ledger:
         queryResult = self.balanceQuery(args.balance, args.start, args.end, args.empty)
         util.printAccounts(queryResult)
 
-    def printRegister(self, args):
-        for (period, periodBalance) in self.registerQuery(args.register, args.start, args.end, args.period, args.empty):
+    def printRegister(self, accountPatterns, start, end, period, printEmptyAccounts=False):
+        for (period, periodBalance) in self.registerQuery(accountPatterns, start, end, period, printEmptyAccounts=printEmptyAccounts):
             util.printPeriod(period)
             util.printAccounts(periodBalance)
 

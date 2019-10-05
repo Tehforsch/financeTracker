@@ -1,6 +1,7 @@
 from dateutil.relativedelta import relativedelta
 from datetime import timedelta
 import config
+import itertools
 
 def subdivideTime(start, end, period):
     """Subdivide the time between startTime and endTime given into 
@@ -26,6 +27,12 @@ def getPeriodDelta(periodString):
 def printPeriod(period):
     print("{} - {}".format(*period))
 
+def getSharedSuperAccounts(string1, string2):
+    accounts1 = string1.split(config.accountSeparator)
+    accounts2 = string2.split(config.accountSeparator)
+    sharedAccounts = (x[0] for x in itertools.takewhile(lambda x: x[0] == x[1], zip(accounts1, accounts2)))
+    return config.accountSeparator.join(sharedAccounts)
+
 def printAccounts(accounts):
     print(accountsStr(accounts))
 
@@ -33,5 +40,11 @@ def accountsStr(accounts):
     sortedAccounts = sorted([account for account in accounts.getAllAccounts()])
     accountPadding = max(len(account) for account in sortedAccounts)
     amountPadding = max(len(str(accounts[account])) for account in sortedAccounts)
-    return "\n".join("{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(account, accounts[account], accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency) for account in sortedAccounts)
+    accountLines = []
+    for (account, previousAccount) in zip(sortedAccounts, [""] + sortedAccounts):
+        shared = getSharedSuperAccounts(account, previousAccount)
+        accountDisplay = account.replace(shared+config.accountSeparator, " " * len(shared))
+        amount = accounts[account]
+        accountLines.append("{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(accountDisplay, amount, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency))
+    return "\n".join(accountLines)
 
