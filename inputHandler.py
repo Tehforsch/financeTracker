@@ -98,8 +98,8 @@ def getAccount(ledger, entry):
 
 def getTransactionsFromCsvEntries(ledger, entries):
     for entry in entries:
-        sourceAccount = getAccount(ledger, entry)
-        targetAccount = config.checkingAccount
+        targetAccount = getAccount(ledger, entry)
+        sourceAccount = config.checkingAccount
         yield Transaction(entry.amount, sourceAccount, targetAccount, entry.originator, entry.date, entry.usage)
     writeAutomaticAccounts()
 

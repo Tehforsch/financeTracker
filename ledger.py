@@ -5,9 +5,13 @@ import yaml
 import re
 import budget
 import logging
+import util
 
 def matchesAny(string, regexList):
     return any(re.search(pattern, string) for pattern in regexList)
+
+def isSubAccount(potentialSubAccount, account):
+    return potentialSubAccount.startswith(account) and potentialSubAccount.replace(account, "").startswith(config.accountSeparator)
 
 class Transaction:
     def __init__(self, amount, sourceAccount, targetAccount, originator, date, usage):
@@ -22,9 +26,18 @@ class Transaction:
         return "{}\n{}\n{}\n{}".format(self.date, self.originator, self.usage, self.amount)
 
 class Accounts(defaultdict):
+    def getAllAccounts(self):
+        """Get all account names of this account list. This is non-trivial because there are also super-accounts that might have never been added to the list explicitly but should still be listed"""
+        allAccounts = set()
+        for account in self:
+            levels = account.split(config.accountSeparator)
+            for i in range(1, len(levels)):
+                allAccounts.add(config.accountSeparator.join(levels[:i]))
+            allAccounts.add(account)
+        return allAccounts
+
     def __str__(self):
-        sortedKeys = sorted([key for key in self])
-        return "\n".join("{}: \t {}".format(key, self[key]) for key in sortedKeys)
+        return util.accountsStr(self)
 
     def filter(self, predicate):
         newAccounts = Accounts(Decimal)
@@ -32,6 +45,15 @@ class Accounts(defaultdict):
             if predicate(key, self[key]):
                 newAccounts[key] = self[key]
         return newAccounts
+
+    def __getitem__(self, key):
+        realValue = self.realValue(key)
+        subAccounts = [account for account in self if isSubAccount(account, key)]
+        return realValue + sum(self[account] for account in subAccounts)
+
+
+    def realValue(self, accountName):
+        return super().__getitem__(accountName)
 
 class Ledger:
     def __init__(self, transactions=[]):
@@ -66,25 +88,27 @@ class Ledger:
         return ledger
 
     def printBalance(self, args):
-        queryResult = self.balanceQuery(args)
-        print(queryResult)
+        queryResult = self.balanceQuery(args.balance, args.start, args.end, args.empty)
+        util.printAccounts(queryResult)
 
-    # def printRegister(self, args):
-    #     queryResult = self.registerQuery(args)
-    #     print(queryResult)
+    def printRegister(self, args):
+        for (period, periodBalance) in self.registerQuery(args.register, args.start, args.end, args.period, args.empty):
+            util.printPeriod(period)
+            util.printAccounts(periodBalance)
+
+    def registerQuery(self, accountPatterns, start, end, period, printEmptyAccounts=False):
+        periods = util.subdivideTime(start, end, period)
+        for period in periods:
+            yield period, self.balanceQuery(accountPatterns, period[0], period[1], printEmptyAccounts=printEmptyAccounts)
 
     def filterTransactionsByTime(self, start, end):
-        for transaction in self.transactions:
-            if (start <= transaction.date) and (transaction.date < end):
-                print(start, transaction.date, end)
         transactionsInThatTimeFrame = [transaction for transaction in self.transactions if (start <= transaction.date) and (transaction.date < end)]
-        # for t in transactionsInThatTimeFrame:
-            # print(t)
         return Ledger(transactionsInThatTimeFrame)
 
-    def balanceQuery(self, args):
-        relevantAccounts = self.getRelevantAccounts(args.balance)
-        if not args.empty:
+    def balanceQuery(self, accountPatterns, start, end, printEmptyAccounts=False):
+        timeLedger = self.filterTransactionsByTime(start, end)
+        relevantAccounts = timeLedger.getRelevantAccounts(accountPatterns)
+        if not printEmptyAccounts:
             relevantAccounts = relevantAccounts.filter(lambda _, value: value != 0)
         return relevantAccounts
 

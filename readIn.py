@@ -4,6 +4,7 @@ import datetime
 import csv
 import logging
 import inputHandler
+import config
 
 class Entry:
     def __init__(self, line, keys, quantityNames):
@@ -30,12 +31,13 @@ class Entry:
         return [self.date, self.originator, self.amount] == [transaction.date, transaction.originator, transaction.amount]
 
     def __str__(self):
-        return "{}\n{}\n{}\n{}\n{}".format(self.date, self.originator, self.name, self.usage, self.amount)
+        return "{}:\n\t{}\n\t{}\n\t{}\n\t{}{}".format(self.date, self.name, self.originator, self.usage, self.amount, config.currency)
+
 def readDefaultCsv(fileHandle, keys, quantityNames, delimiter=",", skip=0):
     reader = csv.reader(fileHandle, delimiter=delimiter)
     lines = [line for line in reader][skip:]
     lines = [Entry(line, keys, quantityNames) for line in lines]
-    return lines[skip:]
+    return lines
 
 def getDibaCsv(dibaFile):
     keys = ["Buchung", "Valuta", "Auftraggeber/Empfänger", "Buchungstext", "Verwendungszweck", "Saldo", "Währung", "Betrag", "Währung"]
@@ -56,6 +58,10 @@ def readEntriesFromCsvFile(args, csvFile):
     return getDibaCsv(csvFile)
 
 def getNewEntries(ledger, entries):
+    oldEntries = [entry for entry in entries if any(entry.isSameTransaction(transaction) for transaction in ledger.transactions)]
+    print("THESE ENTRIES ARE ALREADY IN THE BOOK:")
+    for entry in oldEntries:
+        print(entry)
     return [entry for entry in entries if not any(entry.isSameTransaction(transaction) for transaction in ledger.transactions)]
 
 def getNewTransactions(ledger, entries):

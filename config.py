@@ -12,8 +12,20 @@ addAutomaticAccountString = "automatic"
 
 checkingAccount = "assets:bankDiba"
 
+accountSeparator = ":"
+
 # budget files
 periodIdentifier = "period"
 accountsIdentifier = "accounts"
 
 defaultDateFormat = "%Y-%m-%d"
+
+backupFolder = "backup"
+backupFormat = "%Y-%m-%d-%H-%M-%S"
+
+day = "day"
+week = "week"
+month = "month"
+year = "year"
+periods = [day, week, month, year]
+

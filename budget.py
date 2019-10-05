@@ -1,3 +1,4 @@
+import ledger
 import yaml
 import config
 import util
@@ -12,11 +13,9 @@ def getBudgetDict(budgetFilename):
         assert config.accountsIdentifier in budgetDict
     return budgetDict
 
-def compareToBudget(ledger, args):
+def compareToBudget(ledger_, args):
+    # args.balance = [account for account in budgetDict[config.accountsIdentifier]]
     budgetDict = getBudgetDict(args.budget)
-    periods = util.subdivideTime(args.start, args.end, budgetDict[config.periodIdentifier])
-    for period in periods:
-        periodLedger = ledger.filterTransactionsByTime(*period)
-        print(period)
-        print(periodLedger.accounts)
-        periodLedger.printBalance(args)
+            # for (account, amount) in budgetDict[config.accountsIdentifier].items():
+                # transaction = Transaction(amount, config.checkingAccount, account, "Budget", period[0], "Budget")
+                # periodLedger.addTransaction(transaction)
