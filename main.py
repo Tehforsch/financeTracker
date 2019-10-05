@@ -6,9 +6,8 @@ import argparse
 import datetime
 import config
 import shutil
-
-def isoFormat(string):
-    return datetime.datetime.strptime(string, config.defaultDateFormat).date()
+import inputHandler
+import util
 
 def setupArgs():
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -31,10 +30,11 @@ def setupArgs():
                         nargs="+",
                         type=Path,
                         help='Read the specified csv files and add them to the journal')
-    parser.add_argument('--empty', default=False, action="store_true")
-    parser.add_argument('--start', default=None, type=isoFormat)
-    parser.add_argument('--end', default=None, type=isoFormat)
-    parser.add_argument('--period', default=config.month, type=str, choices=config.periods)
+    parser.add_argument('--empty', default=False, action="store_true", help="Print empty accounts?")
+    parser.add_argument('--start', default=None, type=util.dateFromIsoformat, help="Start date")
+    parser.add_argument('--end', default=None, type=util.dateFromIsoformat, help="End date")
+    parser.add_argument('--period', default=config.month, type=str, choices=config.periods, help="Smallest period for which to aggregate entries in the register/budget commands")
+    parser.add_argument('--cash', default=False, action="store_true", help="Add a cash transaction")
 
     args = parser.parse_args()
     return args
@@ -55,10 +55,13 @@ if __name__ == "__main__":
     args = setupArgs()
     ledger = Ledger.read(args.journal)
     setDefaultArgs(args, ledger)
+    # Create backup ledger
+    backupLedger()
     if args.read is not None:
-        # Create backup ledger
-        backupLedger()
         readIn.read(ledger, args)
+        ledger.write(args.journal)
+    if args.cash:
+        inputHandler.addManualTransaction(ledger)
         ledger.write(args.journal)
     else:
         if args.budget is not None:
@@ -66,5 +69,5 @@ if __name__ == "__main__":
         if args.balance is not None:
             ledger.printBalance(args)
         if args.register is not None:
-            ledger.printRegister(args)
+            ledger.printRegister(args.register, args.start, args.end, args.period, args.empty)
 

@@ -1,6 +1,9 @@
 import config
 import yaml
 from ledger import Transaction
+import datetime
+from decimal import Decimal
+import util
 
 def readAutomaticAccounts():
     with config.automaticAccountsFile.open("r") as f:
@@ -20,15 +23,20 @@ def formatAccountInput(inp):
     else:
         return ":".join(split)
 
-def createManualEntry():
-    localtime = time.localtime()
-    date = str(localtime.tm_year) + "." + str(localtime.tm_mon) + "." + str(localtime.tm_mday)
-    account = formatAccountInput(input("Account: "))
-    payor = input("Payor: ")
-    amount = float(input("Amount you were given (negative if you spent): "))
-    amount = ("%.2f" % round(amount,2))
-    st = date + "\t" + payor + "\n\t{}    ".format(cashAccount) + amount + "€\n\t" + account + "\n"
-    return st
+def getManualTransaction(ledger):
+    print("Adding a new cash entry.")
+    print("Date? YYYY-MM-DD (leave empty for today)")
+    date = inputDefault(datetime.datetime.today().date())
+    if type(date) == str:
+        date = util.dateFromIsoformat(date)
+    source = config.cashAccount
+    target = getAccountInput(ledger, None)
+    originator = input("Payor/Payee: ")
+    amount = Decimal(input("Amount you spent (negative if you were given): "))
+    return Transaction(amount, source, target, originator, date, "")
+
+def addManualTransaction(ledger):
+    ledger.addTransaction(getManualTransaction(ledger))
 
 def checkAccountExists(ledger, account):
     return account in ledger.accounts
@@ -63,9 +71,10 @@ def inputDefault(defaultString):
     else:
         return inp
 
-def getAccountInput(ledger, entry):
+def getAccountInput(ledger, entry, canAddAutomatic=True):
     print("Please enter account for this transaction (or '{}' to create automatic account):".format(config.addAutomaticAccountString))
-    print(entry)
+    if entry is not None:
+        print(entry)
     accountInput = input()
     if accountInput == config.addAutomaticAccountString:
         accountInput = createAutomaticAccount(entry)

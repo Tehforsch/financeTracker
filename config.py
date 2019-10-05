@@ -1,9 +1,11 @@
 from pathlib import Path
 
+financeTrackerPath = "/home/toni/projects/financeTracker/"
+
 currency = "€"
 
-automaticAccountsFile = Path("scripts/automaticAccounts")
-automaticAccountsFile = Path("scripts/automaticAccounts")
+automaticAccountsFile = Path(financeTrackerPath, "data/automaticAccounts")
+automaticAccountsFile = Path(financeTrackerPath, "data/automaticAccounts")
 
 validBaseAccounts = ["reimbursement", "assets", "income", "liabilities", "expenses", "equity"]
 cashAccount = "expenses:cash"

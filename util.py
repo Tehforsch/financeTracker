@@ -2,6 +2,10 @@ from dateutil.relativedelta import relativedelta
 from datetime import timedelta
 import config
 import itertools
+import datetime
+
+def dateFromIsoformat(string):
+    return datetime.datetime.strptime(string, config.defaultDateFormat).date()
 
 def subdivideTime(start, end, period):
     """Subdivide the time between startTime and endTime given into 
@@ -37,6 +41,8 @@ def printAccounts(accounts):
     print(accountsStr(accounts))
 
 def accountsStr(accounts):
+    if len(accounts) == 0:
+        return ""
     sortedAccounts = sorted([account for account in accounts.getAllAccounts()])
     accountPadding = max(len(account) for account in sortedAccounts)
     amountPadding = max(len(str(accounts[account])) for account in sortedAccounts)
