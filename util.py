@@ -14,9 +14,10 @@ def subdivideTime(start, end, period):
     delta = getPeriodDelta(period)
     periods = []
     today = start
+    oneDay = timedelta(1)
     while today <= end:
         afterOnePeriod = today + delta
-        periods.append((today, afterOnePeriod))
+        periods.append((today, afterOnePeriod - oneDay)) # Shift the last date backward one day so we dont have overlapping dates.
         today = afterOnePeriod
     return periods
 
@@ -34,22 +35,33 @@ def printPeriod(period):
 def getSharedSuperAccounts(string1, string2):
     accounts1 = string1.split(config.accountSeparator)
     accounts2 = string2.split(config.accountSeparator)
-    sharedAccounts = (x[0] for x in itertools.takewhile(lambda x: x[0] == x[1], zip(accounts1, accounts2)))
-    return config.accountSeparator.join(sharedAccounts)
+    sharedAccounts = [x[0] for x in itertools.takewhile(lambda x: x[0] == x[1], zip(accounts1, accounts2))]
+    return sharedAccounts
 
-def printAccounts(accounts):
-    print(accountsStr(accounts))
+def printAccounts(accounts, printEmptyAccounts=False, printSuperAccounts=True):
+    if not printEmptyAccounts:
+        accounts = accounts.filter(lambda _, value: value != 0)
+    print(accountsStr(accounts, printSuperAccounts=printSuperAccounts))
 
-def accountsStr(accounts):
+def accountsStr(accounts, printSuperAccounts=True):
     if len(accounts) == 0:
         return ""
-    sortedAccounts = sorted([account for account in accounts.getAllAccounts()])
+    numSpacesToIndent = 4
+    if printSuperAccounts:
+        allAccounts = accounts.getAllAccounts()
+    else:
+        allAccounts = accounts
+    sortedAccounts = sorted(list(allAccounts))
     accountPadding = max(len(account) for account in sortedAccounts)
     amountPadding = max(len(str(accounts[account])) for account in sortedAccounts)
     accountLines = []
     for (account, previousAccount) in zip(sortedAccounts, [""] + sortedAccounts):
-        shared = getSharedSuperAccounts(account, previousAccount)
-        accountDisplay = account.replace(shared+config.accountSeparator, " " * len(shared))
+        if printSuperAccounts:
+            shared = getSharedSuperAccounts(account, previousAccount)
+            indentationLevel = len(shared)
+            accountDisplay = account.replace(config.accountSeparator.join(shared)+config.accountSeparator, " " * indentationLevel * numSpacesToIndent)
+        else:
+            accountDisplay = account
         amount = accounts[account]
         accountLines.append("{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(accountDisplay, amount, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency))
     return "\n".join(accountLines)

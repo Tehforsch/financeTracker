@@ -1,11 +1,11 @@
 from pathlib import Path
 
-financeTrackerPath = "/home/toni/projects/financeTracker/"
+financeDataPath = "/home/toni/resource/finances/data/"
 
 currency = "€"
 
-automaticAccountsFile = Path(financeTrackerPath, "data/automaticAccounts")
-automaticAccountsFile = Path(financeTrackerPath, "data/automaticAccounts")
+automaticAccountsFile = Path(financeDataPath, "automaticAccounts")
+automaticAccountsFile = Path(financeDataPath, "automaticAccounts")
 
 validBaseAccounts = ["reimbursement", "assets", "income", "liabilities", "expenses", "equity"]
 cashAccount = "expenses:cash"
@@ -22,7 +22,7 @@ accountsIdentifier = "accounts"
 
 defaultDateFormat = "%Y-%m-%d"
 
-backupFolder = "backup"
+backupFolder = Path(financeDataPath, "backup")
 backupFormat = "%Y-%m-%d-%H-%M-%S"
 
 day = "day"
@@ -30,4 +30,3 @@ week = "week"
 month = "month"
 year = "year"
 periods = [day, week, month, year]
-
