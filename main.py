@@ -43,6 +43,7 @@ def setupArgs():
                         choices=list(plots.plots.keys()) + ["all"],
                         help='Show a plot showing the data.')
     parser.add_argument('--exact', default=False, action="store_true", help="Only accept exact pattern matches when specifying accounts (instead of any regex match)")
+    parser.add_argument('--sum', default=False, action="store_true", help="Calculate the sum of the values of all the matching accounts for register/balance queries")
 
 
     args = parser.parse_args()
@@ -75,9 +76,9 @@ if __name__ == "__main__":
     if args.budget is not None:
         budget.compareToBudget(ledger, args)
     if args.balance is not None:
-        ledger.printBalance(args)
+        ledger.printRegister(args.balance, args.start, args.end, config.infinite, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
     if args.register is not None:
-        ledger.printRegister(args.register, args.start, args.end, args.period, args.empty, exactMatch=args.exact)
+        ledger.printRegister(args.register, args.start, args.end, args.period, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
     if args.plot is not None:
         if "all" in args.plot:
             args.plot = sorted(list(plots.plots.keys()))

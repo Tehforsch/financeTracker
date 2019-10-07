@@ -11,6 +11,8 @@ def subdivideTime(start, end, period):
     """Subdivide the time between startTime and endTime given into 
     periods of length period and return tuples containing the start
     and end time of the respective period"""
+    if period == config.infinite:
+        return [(start, end)]
     delta = getPeriodDelta(period)
     periods = []
     today = start

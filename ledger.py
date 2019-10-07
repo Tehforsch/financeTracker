@@ -31,7 +31,8 @@ class Transaction:
         self.date = date
 
     def __str__(self):
-        return "{}\n{}\n{}\n{}".format(self.date, self.originator, self.usage, self.amount)
+        # return "{}\n{}\n{}\n{}".format(self.date, self.originator, self.usage, self.amount)
+        return "{}:{}->{}->{}".format(self.date, self.sourceAccount, self.amount, self.targetAccount)
 
 class Accounts(defaultdict):
     def getAllAccounts(self):
@@ -59,7 +60,6 @@ class Accounts(defaultdict):
         subAccounts = [account for account in self if isDirectSubAccount(account, key)]
         return realValue + sum(self[account] for account in subAccounts)
 
-
     def realValue(self, accountName):
         return super().__getitem__(accountName)
 
@@ -72,9 +72,9 @@ class Ledger:
 
     def addTransaction(self, transaction):
         self.transactions.append(transaction)
-        self.accounts[transaction.sourceAccount] -= transaction.amount
-        self.accounts[transaction.targetAccount] += transaction.amount
-        
+        self.accounts[transaction.sourceAccount] = self.accounts.realValue(transaction.sourceAccount) - transaction.amount
+        self.accounts[transaction.targetAccount] = self.accounts.realValue(transaction.targetAccount) + transaction.amount
+    
     def clone(self):
         return Ledger(self.transactions)
 
@@ -97,32 +97,33 @@ class Ledger:
                 ledger.addTransaction(transaction)
         return ledger
 
-    def printBalance(self, args):
-        queryResult = self.balanceQuery(args.balance, args.start, args.end, args.exact)
-        util.printAccounts(queryResult, printEmptyAccounts=args.empty, printSuperAccounts=not args.exact)
-
-    def printRegister(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False):
-        for (period, periodBalance) in self.registerQuery(accountPatterns, start, end, period, exactMatch=exactMatch):
+    def printRegister(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False, sumAllAccounts=False):
+        for (period, periodBalance) in self.registerQuery(accountPatterns, start, end, period, exactMatch=exactMatch, sumAllAccounts=sumAllAccounts):
             util.printPeriod(period)
             util.printAccounts(periodBalance, printEmptyAccounts=printEmptyAccounts, printSuperAccounts=not exactMatch)
 
     @toList
-    def registerQuery(self, accountPatterns, start, end, period, exactMatch=False, totals=False):
+    def registerQuery(self, accountPatterns, start, end, period, exactMatch=False, totals=False, sumAllAccounts=False):
         periods = util.subdivideTime(start, end, period)
         for period in periods:
             if totals:
                 queryStart = start
             else:
                 queryStart = period[0]
-            yield period, self.balanceQuery(accountPatterns, queryStart, period[1], exactMatch=exactMatch)
+            yield period, self.balanceQuery(accountPatterns, queryStart, period[1], exactMatch=exactMatch, sumAllAccounts=sumAllAccounts)
 
     def filterTransactionsByTime(self, start, end):
         transactionsInThatTimeFrame = [transaction for transaction in self.transactions if (start <= transaction.date) and (transaction.date <= end)]
         return Ledger(transactionsInThatTimeFrame)
 
-    def balanceQuery(self, accountPatterns, start, end, exactMatch=False):
+    def balanceQuery(self, accountPatterns, start, end, exactMatch=False, sumAllAccounts=False):
+        print("-----------------------")
         timeLedger = self.filterTransactionsByTime(start, end)
         relevantAccounts = timeLedger.getRelevantAccounts(accountPatterns, exactMatch=exactMatch)
+        if sumAllAccounts:
+            result = Accounts(Decimal)
+            result["Sum"] = sum(value for (_, value) in relevantAccounts.items())
+            return result
         return relevantAccounts
 
     def getRelevantAccounts(self, patterns, exactMatch=False):

@@ -29,4 +29,5 @@ day = "day"
 week = "week"
 month = "month"
 year = "year"
-periods = [day, week, month, year]
+infinite = "infinite"
+periods = [day, week, month, year, infinite]
