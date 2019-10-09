@@ -1,6 +1,6 @@
 import config
 import yaml
-from ledger import Transaction
+from transaction import Transaction
 import datetime
 from decimal import Decimal
 import util
@@ -29,8 +29,8 @@ def getManualTransaction(ledger):
     date = inputDefault(datetime.datetime.today().date())
     if type(date) == str:
         date = util.dateFromIsoformat(date)
-    source = config.cashAccount
-    target = getAccountInput(ledger, None)
+    source = ledger.getAccountFromStr(config.cashAccount)
+    target = ledger.getAccountFromStr(getAccountInput(ledger, None))
     originator = input("Payor/Payee: ")
     amount = Decimal(input("Amount you spent (negative if you were given): "))
     return Transaction(amount, source, target, originator, date, "")
@@ -39,7 +39,7 @@ def addManualTransaction(ledger):
     ledger.addTransaction(getManualTransaction(ledger))
 
 def checkAccountExists(ledger, account):
-    return account in ledger.accounts
+    return account in (acc.name for acc in ledger.topAccount.getAllAccounts())
 
 def createAutomaticAccount(entry):
     decision = input("Create automatic account by originator, by usage or both?\n")
@@ -107,8 +107,8 @@ def getAccount(ledger, entry):
 
 def getTransactionsFromCsvEntries(ledger, entries):
     for entry in entries:
-        targetAccount = getAccount(ledger, entry)
-        sourceAccount = config.checkingAccount
+        targetAccount = ledger.getAccountFromStr(getAccount(ledger, entry))
+        sourceAccount = ledger.getAccountFromStr(config.checkingAccount)
         yield Transaction(entry.amount, sourceAccount, targetAccount, entry.originator, entry.date, entry.usage)
     writeAutomaticAccounts()
 

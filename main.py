@@ -1,4 +1,5 @@
-from ledger import Ledger, Transaction
+from ledger import Ledger
+from transaction import Transaction
 import budget
 import readIn
 from pathlib import Path
@@ -9,6 +10,7 @@ import shutil
 import inputHandler
 import util
 import plots
+import yamlIo
 
 def setupArgs():
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -34,7 +36,7 @@ def setupArgs():
     parser.add_argument('--empty', default=False, action="store_true", help="Print empty accounts?")
     parser.add_argument('--start', default=None, type=util.dateFromIsoformat, help="Start date")
     parser.add_argument('--end', default=None, type=util.dateFromIsoformat, help="End date")
-    parser.add_argument('--period', default=config.month, type=str, choices=config.periods, help="Smallest period for which to aggregate entries in the register/budget commands")
+    parser.add_argument('--period', default=config.infinite, type=str, choices=config.periods, help="Smallest period for which to aggregate entries in the register/budget commands")
     parser.add_argument('--cash', default=False, action="store_true", help="Add a cash transaction")
     parser.add_argument('--plot', 
                         default=None,
@@ -63,22 +65,22 @@ def backupLedger():
 
 if __name__ == "__main__":
     args = setupArgs()
-    ledger = Ledger.read(args.journal)
+    ledger = yamlIo.read(args.journal)
     setDefaultArgs(args, ledger)
     # Create backup ledger
     backupLedger()
     if args.read is not None:
         readIn.read(ledger, args)
-        ledger.write(args.journal)
+        yamlIo.write(ledger, Path("test/out"))
     if args.cash:
         inputHandler.addManualTransaction(ledger)
-        ledger.write(args.journal)
+        yamlIo.write(ledger, Path("test/out"))
     if args.budget is not None:
         budget.compareToBudget(ledger, args)
     if args.balance is not None:
-        ledger.printRegister(args.balance, args.start, args.end, config.infinite, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
+        ledger.printAccounts(args.balance, args.start, args.end, args.period, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
     if args.register is not None:
-        ledger.printRegister(args.register, args.start, args.end, args.period, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
+        ledger.printTransactions(args.register, args.start, args.end, args.period, exactMatch=args.exact)
     if args.plot is not None:
         if "all" in args.plot:
             args.plot = sorted(list(plots.plots.keys()))

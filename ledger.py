@@ -6,6 +6,9 @@ import re
 import budget
 import logging
 import util
+from queryResult import TransactionQueryResult, AccountQueryResult
+from account import Account
+from transaction import Transaction
 
 def toList(func):
     def wrapper(*args, **kwargs):
@@ -21,123 +24,83 @@ def matchesAny(string, regexList, exactMatch=False):
 def isDirectSubAccount(potentialSubAccount, account):
     return potentialSubAccount.startswith(account) and potentialSubAccount.replace(account, "").startswith(config.accountSeparator) and potentialSubAccount.replace(account, "").count(config.accountSeparator) == 1
 
-class Transaction:
-    def __init__(self, amount, sourceAccount, targetAccount, originator, date, usage):
-        self.amount = amount
-        self.sourceAccount = sourceAccount
-        self.targetAccount = targetAccount
-        self.originator = originator
-        self.usage = usage
-        self.date = date
-
-    def __str__(self):
-        # return "{}\n{}\n{}\n{}".format(self.date, self.originator, self.usage, self.amount)
-        return "{}:{}->{}->{}".format(self.date, self.sourceAccount, self.amount, self.targetAccount)
-
-class Accounts(defaultdict):
-    def getAllAccounts(self):
-        """Get all account names of this account list. This is non-trivial because there are also super-accounts that might have never been added to the list explicitly but should still be listed"""
-        allAccounts = set()
-        for account in self:
-            levels = account.split(config.accountSeparator)
-            for i in range(1, len(levels)):
-                allAccounts.add(config.accountSeparator.join(levels[:i]))
-            allAccounts.add(account)
-        return allAccounts
-
-    def __str__(self):
-        return util.accountsStr(self)
-
-    def filter(self, predicate):
-        newAccounts = Accounts(Decimal)
-        for key in self:
-            if predicate(key, self[key]):
-                newAccounts[key] = self[key]
-        return newAccounts
-
-    def __getitem__(self, key):
-        realValue = self.realValue(key)
-        subAccounts = [account for account in self if isDirectSubAccount(account, key)]
-        return realValue + sum(self[account] for account in subAccounts)
-
-    def realValue(self, accountName):
-        return super().__getitem__(accountName)
-
 class Ledger:
-    def __init__(self, transactions=[]):
-        self.accounts = Accounts(Decimal)
+    def __init__(self):
+        self.topAccount = Account("all")
         self.transactions = []
-        for transaction in transactions:
-            self.addTransaction(transaction)
 
     def addTransaction(self, transaction):
         self.transactions.append(transaction)
-        self.accounts[transaction.sourceAccount] = self.accounts.realValue(transaction.sourceAccount) - transaction.amount
-        self.accounts[transaction.targetAccount] = self.accounts.realValue(transaction.targetAccount) + transaction.amount
-    
-    def clone(self):
-        return Ledger(self.transactions)
+        self.handleTransaction(transaction)
 
-    def __str__(self):
-        return str(self.accounts)
-
-    def accountToStr(self, acc):
-        return "{}:\t{}".format(acc, self.accounts[acc])
-
-    def write(self, outFile):
-        with outFile.open("w") as f:
-            yaml.dump(self.transactions, f)
-
-    @staticmethod
-    def read(inFile):
-        with inFile.open("r") as f:
-            transactions = yaml.unsafe_load(f)
-            ledger = Ledger()
-            for transaction in transactions:
-                ledger.addTransaction(transaction)
-        return ledger
-
-    def printRegister(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False, sumAllAccounts=False):
-        for (period, periodBalance) in self.registerQuery(accountPatterns, start, end, period, exactMatch=exactMatch, sumAllAccounts=sumAllAccounts):
-            util.printPeriod(period)
-            util.printAccounts(periodBalance, printEmptyAccounts=printEmptyAccounts, printSuperAccounts=not exactMatch)
-
-    @toList
-    def registerQuery(self, accountPatterns, start, end, period, exactMatch=False, totals=False, sumAllAccounts=False):
-        periods = util.subdivideTime(start, end, period)
-        for period in periods:
-            if totals:
-                queryStart = start
-            else:
-                queryStart = period[0]
-            yield period, self.balanceQuery(accountPatterns, queryStart, period[1], exactMatch=exactMatch, sumAllAccounts=sumAllAccounts)
-
-    def filterTransactionsByTime(self, start, end):
-        transactionsInThatTimeFrame = [transaction for transaction in self.transactions if (start <= transaction.date) and (transaction.date <= end)]
-        return Ledger(transactionsInThatTimeFrame)
-
-    def balanceQuery(self, accountPatterns, start, end, exactMatch=False, sumAllAccounts=False):
-        print("-----------------------")
-        timeLedger = self.filterTransactionsByTime(start, end)
-        relevantAccounts = timeLedger.getRelevantAccounts(accountPatterns, exactMatch=exactMatch)
-        if sumAllAccounts:
-            result = Accounts(Decimal)
-            result["Sum"] = sum(value for (_, value) in relevantAccounts.items())
-            return result
-        return relevantAccounts
-
-    def getRelevantAccounts(self, patterns, exactMatch=False):
-        if patterns is None or patterns == []:
-            return self.accounts.copy()
-        else:
-            relevantAccounts = self.accounts.filter(lambda name, _: matchesAny(name, patterns, exactMatch=exactMatch))
-            return relevantAccounts
-
-    def getAllSubAccounts(self, superAccount):
-        return self.accounts.filter(lambda name, amount: name.startswith(superAccount))
+    def handleTransaction(self, transaction):
+        transaction.sourceAccount.amount -= transaction.amount
+        transaction.targetAccount.amount += transaction.amount
 
     def getFirstTransactionDate(self):
         return min(transaction.date for transaction in self.transactions)
 
     def getLastTransactionDate(self):
         return max(transaction.date for transaction in self.transactions)
+
+    # def filter(self, predicate):
+    #     newAccounts = Accounts(Decimal)
+    #     for key in self:
+    #         if predicate(key, self[key]):
+    #             newAccounts[key] = self[key]
+    #     return newAccounts
+
+    def printAccounts(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False, sumAllAccounts=False):
+        self.printPeriodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, printEmptyAccounts=printEmptyAccounts, exactMatch=exactMatch, sumAllAccounts=sumAllAccounts)
+
+    def printTransactions(self, accountPatterns, start, end, period, exactMatch=False):
+        self.printPeriodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
+
+    def printPeriodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False, **kwargs):
+        periods = util.subdivideTime(start, end, period)
+        for period_ in periods:
+            if period != config.infinite:
+                print(period_)
+            print(queryFunction(accountPatterns, period_[0], period_[1], exactMatch=exactMatch).toStr(**kwargs))
+
+    def patternAccountQuery(self, accountPatterns, start, end, exactMatch=False):
+        return self.patternQuery(self.accountQuery, accountPatterns, start, end, exactMatch=exactMatch)
+    
+    def patternTransactionQuery(self, accountPatterns, start, end, exactMatch=False):
+        return self.patternQuery(self.transactionQuery, accountPatterns, start, end, exactMatch=exactMatch)
+    
+    def patternQuery(self, function, accountPatterns, start, end, exactMatch=False):
+        isInThatTimeFrame = lambda transaction: (start <= transaction.date) and (transaction.date <= end)
+        # accountPredicate = lambda _:True if accountPatterns is None or accountPatterns == [] else lambda account: matchesAny(account.name, accountPatterns, exactMatch=exactMatch)
+        if accountPatterns is None or accountPatterns == []:
+            accountPredicate = lambda _: True
+        else:
+            accountPredicate = lambda account: matchesAny(account.name, accountPatterns, exactMatch=exactMatch)
+        return function(transactionPredicate=isInThatTimeFrame, accountPredicate=accountPredicate)
+    
+    def accountQuery(self, transactionPredicate=lambda _:True, accountPredicate=lambda _:True):
+        self.topAccount.reset()
+        for transaction in self.transactions:
+            if transactionPredicate(transaction):
+                self.handleTransaction(transaction)
+        return AccountQueryResult(self.topAccount, accountPredicate)
+
+    def transactionQuery(self, transactionPredicate=lambda _:True, accountPredicate=lambda _:True):
+        return TransactionQueryResult([transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))])
+
+    def getAccountFromStr(self, fullName, account=None):
+        split = fullName.split(":")
+        topName = split[0]
+        subName = ":".join(split[1:])
+        if account is None:
+            return self.getAccountFromStr(fullName, self.topAccount)
+        else:
+            if topName in [acc.rawName for acc in account.subAccounts]:
+                nextAccount = next(acc for acc in account.subAccounts if acc.rawName == topName)
+            else:
+                nextAccount = Account(topName)
+                account.addAccount(nextAccount)
+            if fullName == topName:
+                return nextAccount
+            else:
+                return self.getAccountFromStr(subName, nextAccount)
