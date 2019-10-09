@@ -6,12 +6,13 @@ class TransactionQueryResult(list):
 
 class AccountQueryResult():
     def __init__(self, topAccount, accountPredicate):
-        self.topAccount = topAccount
+        self.topAccount = topAccount.clone()
         self.accountPredicate = accountPredicate
 
     def toStr(self, printEmptyAccounts=False, sumAllAccounts=False):
         if sumAllAccounts:
-            return "{}: {}".format(self.topAccount.name, self.topAccount.total)
+            summed = sum(acc.amount for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc))
+            return "{}: {}".format(self.topAccount.name, summed)
         else:
             predicate = lambda account: self.accountPredicate(account) and (printEmptyAccounts or not account.isEmpty())
             return self.accountToStr(predicate)
@@ -31,3 +32,5 @@ class AccountQueryResult():
     def __str__(self):
         return self.toStr()
 
+    def getAccount(self, accountName):
+        return self.topAccount.getAccount(accountName)

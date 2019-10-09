@@ -58,8 +58,17 @@ def datePlot(dates, dataSets, title="", xlabel="", ylabel="", labels=[""]):
     plt.show()
 
 def getQuery(ledger, accounts, start, end, period, invert=False, totals=False):
-    queryResult = ledger.registerQuery(accounts, start, end, period, totals=totals)
-    return [(-1 if invert else 1) * float(sum(query[1][account] for account in accounts)) for query in queryResult]
+    if totals:
+        queryResult = ledger.periodicAccountQuery(accounts, start, end, period)
+    else:
+        queryResult = ledger.periodicAccountQuery(accounts, start, end, period)
+    return [(-1 if invert else 1) * float(sum(getAccountTotal(query, account) for account in accounts)) for (period, query) in queryResult]
+
+def getAccountTotal(query, accountName):
+    try:
+        return query.getAccount(accountName).total
+    except StopIteration:
+        return 0
 
 def getAccountListDifference(accountList1, accountList2):
     return [account1 for account1 in accountList1 if not any(account1 == account2 or account1.startswith(account2) for account2 in accountList2)]
@@ -71,6 +80,7 @@ def smoothDates(dates, N=12):
     return dates[N//2-1:len(dates)-N//2]
 
 def plotAccounts(ledger, accountLists, start, end, xlabel, ylabel, labels, smooth=False, invert=None, totals=False):
+    print(accountLists)
     if invert is None:
         invert = [False for _ in accountLists]
     dates = [d[0] for d in util.subdivideTime(start, end, config.month)]
@@ -88,7 +98,8 @@ def plotExpensesIncome(ledger, start, end, smooth=False):
     plotAccounts(ledger, [["expenses"], ["income"]], start, end, "Month", "Monthly expenses [€]", ["Expenses", "Income"], smooth=smooth, invert=[False, True])
 
 def plotLivingLuxury(ledger, start, end, smooth=False):
-    allExpenses = ledger.getAllSubAccounts("expenses")
+    allExpenses = [acc.name for acc in ledger.getAccount("expenses").getAllAccounts()]
+    allExpenses.remove("expenses")
     listOfLivingExpenses = ["expenses:{}".format(account) for account in ["bhw", "food", "hausgeld", "insurance", "internet", "medical", "rent", "publicTransport", "strom", "uni", "wohnung"]]
     listOfLuxuryExpenses = getAccountListDifference(allExpenses, listOfLivingExpenses)
     print("Assuming the following expenses are luxuries:")

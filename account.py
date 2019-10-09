@@ -46,3 +46,17 @@ class Account:
             return 0
         else:
             return 1+self.superAccount.level
+
+    def getAccount(self, accountName):
+        try:
+            acc = next(acc for acc in self.getAllAccounts() if acc.name == accountName)
+            return acc
+        except StopIteration:
+            raise StopIteration("No such account: {}".format(accountName))
+
+    def clone(self, superAccount=None):
+        newAcc = Account(self.rawName)
+        newAcc.amount = self.amount
+        newAcc.superAccount=superAccount
+        newAcc.subAccounts = [acc.clone(self) for acc in self.subAccounts]
+        return newAcc

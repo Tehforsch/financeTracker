@@ -71,10 +71,10 @@ if __name__ == "__main__":
     backupLedger()
     if args.read is not None:
         readIn.read(ledger, args)
-        yamlIo.write(ledger, Path("test/out"))
+        yamlIo.write(ledger, args.journal)
     if args.cash:
         inputHandler.addManualTransaction(ledger)
-        yamlIo.write(ledger, Path("test/out"))
+        yamlIo.write(ledger, args.journal)
     if args.budget is not None:
         budget.compareToBudget(ledger, args)
     if args.balance is not None:
