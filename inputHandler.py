@@ -29,11 +29,12 @@ def getManualTransaction(ledger):
     date = inputDefault(datetime.datetime.today().date())
     if type(date) == str:
         date = util.dateFromIsoformat(date)
-    source = ledger.getAccountFromStr(config.cashAccount)
+    print("Source account? (Leave empty for cash)")
+    source = ledger.getAccountFromStr(getAccountInput(ledger, None, defaultAccount="expenses:cash"))
+    print("Target account?")
     target = ledger.getAccountFromStr(getAccountInput(ledger, None))
-    originator = input("Payor/Payee: ")
     amount = Decimal(input("Amount you spent (negative if you were given): "))
-    return Transaction(amount, source, target, originator, date, "")
+    return Transaction(amount, source, target, config.defaultOriginator, date, "")
 
 def addManualTransaction(ledger):
     ledger.addTransaction(getManualTransaction(ledger))
@@ -71,11 +72,13 @@ def inputDefault(defaultString):
     else:
         return inp
 
-def getAccountInput(ledger, entry, canAddAutomatic=True):
+def getAccountInput(ledger, entry, canAddAutomatic=True, defaultAccount=None):
     print("Please enter account for this transaction (or '{}' to create automatic account):".format(config.addAutomaticAccountString))
     if entry is not None:
         print(entry)
     accountInput = input()
+    if accountInput == "" and defaultAccount is not None:
+        accountInput = defaultAccount
     if accountInput == config.addAutomaticAccountString:
         accountInput = createAutomaticAccount(entry)
     else:
