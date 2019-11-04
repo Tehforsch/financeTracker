@@ -31,3 +31,6 @@ month = "month"
 year = "year"
 infinite = "infinite"
 periods = [day, week, month, year, infinite]
+
+defaultPeriod = "month"
+defaultOriginator = "Toni Peter"

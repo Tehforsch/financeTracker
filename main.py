@@ -13,7 +13,7 @@ import plots
 import yamlIo
 
 def setupArgs():
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='Track finances and calculate queries')
     parser.add_argument('journal', 
                         type=Path,
                         help='name of the journal file(s) to read')

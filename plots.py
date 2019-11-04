@@ -59,6 +59,7 @@ def datePlot(dates, dataSets, title="", xlabel="", ylabel="", labels=[""]):
 
 def getQuery(ledger, accounts, start, end, period, invert=False, totals=False):
     if totals:
+        raise NotImplementedError
         queryResult = ledger.periodicAccountQuery(accounts, start, end, period)
     else:
         queryResult = ledger.periodicAccountQuery(accounts, start, end, period)
