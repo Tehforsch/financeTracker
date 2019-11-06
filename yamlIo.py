@@ -18,7 +18,9 @@ def readOld(inFile):
 
 def read(inFile):
     with inFile.open("r") as f:
-        return yaml.unsafe_load(f)
+        ledger_ = yaml.unsafe_load(f)
+        x = ledger_.topAccount.reset()
+        return ledger_
 
 def getTransaction(ledger_, str_transaction):
     sourceAccount = ledger.getAccountFromStr(str_transaction.sourceAccount)
