@@ -21,7 +21,7 @@ class AccountQueryResult():
         s = ""
         accountPadding = max(len(acc.name) for acc in self.topAccount.getAllAccounts())
         amountPadding = max(len(str(acc.total)) for acc in self.topAccount.getAllAccounts())
-        for account in self.topAccount.getAllAccounts():
+        for account in sorted(self.topAccount.getAllAccounts(), key=lambda acc: acc.name):
             if not predicate(account):
                 continue
             numSpaces = account.level * 4
