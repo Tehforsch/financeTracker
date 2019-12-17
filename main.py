@@ -46,6 +46,8 @@ def setupArgs():
                         help='Show a plot showing the data.')
     parser.add_argument('--exact', default=False, action="store_true", help="Only accept exact pattern matches when specifying accounts (instead of any regex match)")
     parser.add_argument('--sum', default=False, action="store_true", help="Calculate the sum of the values of all the matching accounts for register/balance queries")
+    parser.add_argument('--total', default=False, action="store_true", help="Sum over all accounts and print the total for budget calculations")
+    parser.add_argument('--invert', default=None, nargs="*", help="When calculating totals invert the passed accounts")
 
 
     args = parser.parse_args()
@@ -76,7 +78,10 @@ if __name__ == "__main__":
         inputHandler.addManualTransaction(ledger)
         yamlIo.write(ledger, args.journal)
     if args.budget is not None:
-        budget.compareToBudget(ledger, args)
+        if args.total:
+            budget.showRemainingMoney(ledger, args)
+        else:
+            budget.compareToBudget(ledger, args)
     if args.balance is not None:
         ledger.printAccounts(args.balance, args.start, args.end, args.period, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
     if args.register is not None:

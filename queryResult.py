@@ -14,9 +14,10 @@ class AccountQueryResult():
         self.topAccount = topAccount.clone()
         self.accountPredicate = accountPredicate
 
-    def toStr(self, printEmptyAccounts=False, sumAllAccounts=False):
+    def toStr(self, printEmptyAccounts=False, sumAllAccounts=False, factor=lambda _: 1):
         if sumAllAccounts:
-            summed = sum(acc.amount for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc))
+            summed = sum(factor(acc) * acc.amount for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc))
+            print([(acc.amount, acc.name) for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc)])
             return "{}: {}".format(self.topAccount.name, summed)
         else:
             predicate = lambda account: self.accountPredicate(account) and (printEmptyAccounts or not account.isEmpty())
@@ -52,8 +53,12 @@ class BudgetResult(AccountQueryResult):
         for account in sorted(self.topAccount.getAllAccounts(), key=lambda acc: acc.name):
             if not predicate(account):
                 continue
+            print(account.name)
             budgetAmount = self.budget[config.accountsIdentifier][account.name]
-            percentage = account.total / budgetAmount * 100
+            if budgetAmount == 0:
+                percentage = 0
+            else:
+                percentage = account.total / budgetAmount * 100
             s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency} / {budgetAmount}{currency} ({percentage:.0f}%)".format(account.name, account.total, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency, budgetAmount=budgetAmount, percentage=percentage) + "\n"
         return s
 
