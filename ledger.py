@@ -98,7 +98,8 @@ class Ledger:
         return AccountQueryResult(self.topAccount, accountPredicate)
 
     def transactionQuery(self, transactionPredicate=lambda _:True, accountPredicate=lambda _:True):
-        return TransactionQueryResult([transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))])
+        transactions = [transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))]
+        return TransactionQueryResult(sorted(transactions, key=lambda transaction: transaction.date))
 
     def getAccountFromStr(self, fullName, account=None):
         split = fullName.split(":")
