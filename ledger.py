@@ -57,17 +57,17 @@ class Ledger:
         self.printPeriodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
     def printPeriodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=False)
+        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=exactMatch)
         for (period_, out) in result:
             if period == config.infinite:
                 print(period_)
             print(out.toStr(**kwargs))
 
     def periodicTransactionQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        return self.periodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=False)
+        return self.periodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
     def periodicAccountQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        return self.periodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, exactMatch=False)
+        return self.periodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
     @toList
     def periodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False):

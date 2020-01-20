@@ -2,29 +2,64 @@ import ledger
 import yaml
 import config
 import util
+from queryResult import BudgetResult
+from decimal import Decimal
 
 def getBudgetForTime(budgetFilename, startDate, endDate):
     budgetDict = getBudgetDict(budgetFilename)
 
 def getBudgetDict(budgetFilename):
     with budgetFilename.open("r") as f:
-        budgetDict = yaml.unsafe_load(f)
+        budgetDict = yaml.load(f)
         assert config.periodIdentifier in budgetDict
         assert config.accountsIdentifier in budgetDict
+    for (k, v) in budgetDict[config.accountsIdentifier].items():
+        budgetDict[config.accountsIdentifier][k] = Decimal(v.replace(config.currency, ""))
     return budgetDict
+
+def getPeriod(budgetDict):
+    return budgetDict.get(config.periodIdentifier, config.defaultPeriod)
 
 def compareToBudget(ledger_, args):
     budgetDict = getBudgetDict(args.budget)
-    period = budgetDict.get(config.periodIdentifier, config.defaultPeriod)
-    # periods = util.subdivideTime(args.start, args.end, budgetDict[config.periodIdentifier])
-    # for period in periods:
-    #     for (account, amount) in budgetDict[config.accountsIdentifier].items():
-    #         transaction = ledger.Transaction(amount, config.checkingAccount, account, "Budget", period[0], "Budget")
-    #         budgetLedger.addTransaction(transaction)
-    # for account in budgetDict[config.accountsIdentifier]:
+    period = getPeriod(budgetDict)
     accounts = budgetDict[config.accountsIdentifier]
-    queryResult = ledger_.periodicAccountQuery(accounts, args.start, args.end, period)
-    for (period, result) in queryResult:
-        print(period)
+    if args.sum:
+        queryResult = ledger_.patternAccountQuery(accounts, args.start, args.end)
+        result = BudgetResult(queryResult, budgetDict)
+        budgetDict = extrapolate(budgetDict, args)
         print(result)
-        print("WRITE A QUERYRESULT CLASS HERE THAT EXTENDS THIS OUTPUT. This is all thats left to do.")
+    else:
+        queryResult = ledger_.periodicAccountQuery(accounts, args.start, args.end, period, exactMatch=True)
+        for (period, result) in queryResult:
+            print(period)
+            result = BudgetResult(result, budgetDict)
+            print(result)
+
+def showRemainingMoney(ledger_, args):
+    budgetDict = getBudgetDict(args.budget)
+    period = getPeriod(budgetDict)
+    accounts = budgetDict[config.accountsIdentifier]
+    queryResult = ledger_.patternAccountQuery(accounts, args.start, args.end)
+    totalUsed = Decimal(0.0)
+    for acc in queryResult.topAccount.getAllAccounts():
+        if acc.name in accounts:
+            if args.invert is None:
+                factor = 1
+            else:
+                factor = -1 if acc.name in args.invert else 1
+            totalUsed += factor * acc.total
+    budgetDict = extrapolate(budgetDict, args)
+    totalAvailable = sum(budgetDict[config.accountsIdentifier].values())
+    print("Used: {}/{}{currency}".format(totalUsed, totalAvailable, currency=config.currency))
+    print("Left: {}{currency}".format(totalAvailable - totalUsed, currency=config.currency))
+
+def extrapolate(budgetDict, args):
+    delta = args.end - args.start
+    period = getPeriod(budgetDict)
+    numPeriods = Decimal(util.countPeriods(args.start, args.end, period)).to_integral_exact()
+    budgetDict[config.accountsIdentifier] = dict_multiply(budgetDict[config.accountsIdentifier], numPeriods)
+    return budgetDict
+
+def dict_multiply(d, factor):
+    return dict((k, v * factor) for (k, v) in d.items())
