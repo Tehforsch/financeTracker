@@ -60,3 +60,12 @@ class Account:
         newAcc.superAccount=superAccount
         newAcc.subAccounts = [acc.clone(self) for acc in self.subAccounts]
         return newAcc
+
+    def __str__(self):
+        return self.name
+
+    def __eq__(self, account):
+        return self.name == account.name
+
+    def __hash__(self):
+        return self.name.__hash__()

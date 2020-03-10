@@ -18,12 +18,8 @@ def getBudgetDict(budgetFilename):
         budgetDict[config.accountsIdentifier][k] = Decimal(v.replace(config.currency, ""))
     return budgetDict
 
-def getPeriod(budgetDict):
-    return budgetDict.get(config.periodIdentifier, config.defaultPeriod)
-
 def compareToBudget(ledger_, args):
     budgetDict = getBudgetDict(args.budget)
-    period = getPeriod(budgetDict)
     accounts = budgetDict[config.accountsIdentifier]
     if args.sum:
         queryResult = ledger_.patternAccountQuery(accounts, args.start, args.end)
@@ -31,7 +27,7 @@ def compareToBudget(ledger_, args):
         budgetDict = extrapolate(budgetDict, args)
         print(result)
     else:
-        queryResult = ledger_.periodicAccountQuery(accounts, args.start, args.end, period, exactMatch=True)
+        queryResult = ledger_.periodicAccountQuery(accounts, args.start, args.end, args.period, exactMatch=True)
         for (period, result) in queryResult:
             print(period)
             result = BudgetResult(result, budgetDict)
@@ -39,7 +35,6 @@ def compareToBudget(ledger_, args):
 
 def showRemainingMoney(ledger_, args):
     budgetDict = getBudgetDict(args.budget)
-    period = getPeriod(budgetDict)
     accounts = budgetDict[config.accountsIdentifier]
     queryResult = ledger_.patternAccountQuery(accounts, args.start, args.end)
     totalUsed = Decimal(0.0)
@@ -57,8 +52,8 @@ def showRemainingMoney(ledger_, args):
 
 def extrapolate(budgetDict, args):
     delta = args.end - args.start
-    period = getPeriod(budgetDict)
-    numPeriods = Decimal(util.countPeriods(args.start, args.end, period)).to_integral_exact()
+    numPeriods = Decimal(util.countPeriods(args.start, args.end, args.period)).to_integral_exact()
+    print(numPeriods)
     budgetDict[config.accountsIdentifier] = dict_multiply(budgetDict[config.accountsIdentifier], numPeriods)
     return budgetDict
 

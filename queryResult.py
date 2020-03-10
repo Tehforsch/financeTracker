@@ -51,9 +51,8 @@ class BudgetResult(AccountQueryResult):
         accountPadding = max(len(acc.name) for acc in self.topAccount.getAllAccounts())
         amountPadding = max(len(str(acc.total)) for acc in self.topAccount.getAllAccounts())
         for account in sorted(self.topAccount.getAllAccounts(), key=lambda acc: acc.name):
-            if not predicate(account):
+            if (not predicate(account)) or (not account.name in self.budget[config.accountsIdentifier]):
                 continue
-            print(account.name)
             budgetAmount = self.budget[config.accountsIdentifier][account.name]
             if budgetAmount == 0:
                 percentage = 0

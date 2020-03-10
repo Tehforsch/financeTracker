@@ -10,7 +10,7 @@ import shutil
 import inputHandler
 import util
 import plots
-import yamlIo
+import csvIo
 
 def setupArgs():
     parser = argparse.ArgumentParser(description='Track finances and calculate queries')
@@ -67,16 +67,16 @@ def backupLedger():
 
 if __name__ == "__main__":
     args = setupArgs()
-    ledger = yamlIo.read(args.journal)
+    ledger = csvIo.read(args.journal)
     setDefaultArgs(args, ledger)
     # Create backup ledger
     backupLedger()
     if args.read is not None:
         readIn.read(ledger, args)
-        yamlIo.write(ledger, args.journal)
+        csvIo.write(ledger, args.journal)
     if args.cash:
         inputHandler.addManualTransaction(ledger)
-        yamlIo.write(ledger, args.journal)
+        csvIo.write(ledger, args.journal)
     if args.budget is not None:
         if args.total:
             budget.showRemainingMoney(ledger, args)
