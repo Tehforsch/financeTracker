@@ -4,13 +4,14 @@ import config
 import util
 from queryResult import BudgetResult
 from decimal import Decimal
+from yaml import UnsafeLoader
 
 def getBudgetForTime(budgetFilename, startDate, endDate):
     budgetDict = getBudgetDict(budgetFilename)
 
 def getBudgetDict(budgetFilename):
     with budgetFilename.open("r") as f:
-        budgetDict = yaml.load(f)
+        budgetDict = yaml.load(f, Loader=UnsafeLoader)
         assert config.periodIdentifier in budgetDict
         assert config.accountsIdentifier in budgetDict
     for (k, v) in budgetDict[config.accountsIdentifier].items():

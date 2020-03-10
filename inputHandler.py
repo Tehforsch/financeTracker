@@ -4,10 +4,11 @@ from transaction import Transaction
 import datetime
 from decimal import Decimal
 import util
+from yaml import UnsafeLoader
 
 def readAutomaticAccounts():
     with config.automaticAccountsFile.open("r") as f:
-        return yaml.load(f)
+        return yaml.load(f, Loader=UnsafeLoader)
 
 def writeAutomaticAccounts():
     yaml.dump(automaticAccounts, config.automaticAccountsFile.open("w"))
