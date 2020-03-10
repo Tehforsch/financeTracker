@@ -7,7 +7,7 @@ import util
 
 def readAutomaticAccounts():
     with config.automaticAccountsFile.open("r") as f:
-        return yaml.unsafe_load(f)
+        return yaml.load(f)
 
 def writeAutomaticAccounts():
     yaml.dump(automaticAccounts, config.automaticAccountsFile.open("w"))

@@ -31,6 +31,14 @@ def getPeriodDelta(periodString):
             config.year: relativedelta(years=+1)
             }[periodString]
 
+def getPeriodDays(periodString):
+    return {
+            config.day: 1,
+            config.week: 7,
+            config.month: 30,
+            config.year: 365
+            }[periodString]
+
 def printPeriod(period):
     print("{} - {}".format(*period))
 
@@ -68,3 +76,6 @@ def accountsStr(accounts, printSuperAccounts=True):
         accountLines.append("{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(accountDisplay, amount, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency))
     return "\n".join(accountLines)
 
+def countPeriods(start, end, period):
+    return (end-start).days / getPeriodDays(period)
+        

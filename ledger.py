@@ -57,17 +57,17 @@ class Ledger:
         self.printPeriodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
     def printPeriodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=False)
+        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=exactMatch)
         for (period_, out) in result:
             if period == config.infinite:
                 print(period_)
             print(out.toStr(**kwargs))
 
     def periodicTransactionQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        return self.periodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=False)
+        return self.periodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
     def periodicAccountQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        return self.periodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, exactMatch=False)
+        return self.periodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
     @toList
     def periodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False):
@@ -98,7 +98,8 @@ class Ledger:
         return AccountQueryResult(self.topAccount, accountPredicate)
 
     def transactionQuery(self, transactionPredicate=lambda _:True, accountPredicate=lambda _:True):
-        return TransactionQueryResult([transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))])
+        transactions = [transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))]
+        return TransactionQueryResult(sorted(transactions, key=lambda transaction: transaction.date))
 
     def getAccountFromStr(self, fullName, account=None):
         split = fullName.split(":")
