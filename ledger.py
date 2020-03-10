@@ -9,6 +9,7 @@ import util
 from queryResult import TransactionQueryResult, AccountQueryResult
 from account import Account
 from transaction import Transaction
+import decimal
 
 def toList(func):
     def wrapper(*args, **kwargs):
@@ -50,18 +51,25 @@ class Ledger:
     #             newAccounts[key] = self[key]
     #     return newAccounts
 
-    def printAccounts(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False, sumAllAccounts=False):
+    def printAverages(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
+        result = self.patternAccountQuery(accountPatterns, start, end, exactMatch=exactMatch)
+        factor = lambda _: 1.0 / util.countPeriods(start, end, period)
+        print(result.toStr(factor=factor, **kwargs))
+
+    def printPeriodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False, **kwargs):
+        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=exactMatch)
+        for (period_, out) in result:
+            self.printPeriod(period_)
+            print(out.toStr(**kwargs))
+
+    def printAccounts(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False, sumAllAccounts=False, average=False):
         self.printPeriodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, printEmptyAccounts=printEmptyAccounts, exactMatch=exactMatch, sumAllAccounts=sumAllAccounts)
 
     def printTransactions(self, accountPatterns, start, end, period, exactMatch=False):
         self.printPeriodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
 
-    def printPeriodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=exactMatch)
-        for (period_, out) in result:
-            if period == config.infinite:
-                print(period_)
-            print(out.toStr(**kwargs))
+    def printPeriod(self, period):
+        print("{} -\n{}".format(period[0], period[1]))
 
     def periodicTransactionQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
         return self.periodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)

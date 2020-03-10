@@ -17,22 +17,21 @@ class AccountQueryResult():
     def toStr(self, printEmptyAccounts=False, sumAllAccounts=False, factor=lambda _: 1):
         if sumAllAccounts:
             summed = sum(factor(acc) * acc.amount for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc))
-            print([(acc.amount, acc.name) for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc)])
             return "{}: {}".format(self.topAccount.name, summed)
         else:
             predicate = lambda account: self.accountPredicate(account) and (printEmptyAccounts or not account.isEmpty())
-            return self.accountsToStr(predicate)
+            return self.accountsToStr(predicate, factor=factor)
 
-    def accountsToStr(self, predicate):
+    def accountsToStr(self, predicate, factor=lambda _: 1):
         s = ""
         accountPadding = max(len(acc.name) for acc in self.topAccount.getAllAccounts())
-        amountPadding = max(len(str(acc.total)) for acc in self.topAccount.getAllAccounts())
+        amountPadding = max(len(str(getMultipliedTotal(acc, factor))) for acc in self.topAccount.getAllAccounts())
         for account in sorted(self.topAccount.getAllAccounts(), key=lambda acc: acc.name):
             if not predicate(account):
                 continue
             numSpaces = account.level * 4
             indentation = numSpaces * " "
-            s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(indentation + account.rawName, str(account.total), accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency) + "\n"
+            s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(indentation + account.rawName, str(getMultipliedTotal(account, factor)), accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency) + "\n"
         return s
 
     def __str__(self):
@@ -40,6 +39,9 @@ class AccountQueryResult():
 
     def getAccount(self, accountName):
         return self.topAccount.getAccount(accountName)
+
+def getMultipliedTotal(account, factor):
+    return Decimal(float(account.total) * factor(account.name)).quantize(Decimal("0.01"))
 
 class BudgetResult(AccountQueryResult):
     def __init__(self, accountQueryResult, budget):

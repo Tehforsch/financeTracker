@@ -11,6 +11,7 @@ import inputHandler
 import util
 import plots
 import csvIo
+import decimal
 
 def setupArgs():
     parser = argparse.ArgumentParser(description='Track finances and calculate queries')
@@ -46,7 +47,7 @@ def setupArgs():
                         help='Show a plot showing the data.')
     parser.add_argument('--exact', default=False, action="store_true", help="Only accept exact pattern matches when specifying accounts (instead of any regex match)")
     parser.add_argument('--sum', default=False, action="store_true", help="Calculate the sum of the values of all the matching accounts for register/balance queries")
-    parser.add_argument('--total', default=False, action="store_true", help="Sum over all accounts and print the total for budget calculations")
+    parser.add_argument('--average', default=False, action="store_true", help="Show the average change per period of the account.")
     parser.add_argument('--invert', default=None, nargs="*", help="When calculating totals invert the passed accounts")
 
 
@@ -78,12 +79,15 @@ if __name__ == "__main__":
         inputHandler.addManualTransaction(ledger)
         csvIo.write(ledger, args.journal)
     if args.budget is not None:
-        if args.total:
+        if args.sum:
             budget.showRemainingMoney(ledger, args)
         else:
             budget.compareToBudget(ledger, args)
     if args.balance is not None:
-        ledger.printAccounts(args.balance, args.start, args.end, args.period, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
+        if args.average:
+            ledger.printAverages(args.balance, args.start, args.end, args.period, printEmptyAccounts=args.empty, exactMatch=args.exact)
+        else:
+            ledger.printAccounts(args.balance, args.start, args.end, args.period, args.empty, exactMatch=args.exact, sumAllAccounts=args.sum)
     if args.register is not None:
         ledger.printTransactions(args.register, args.start, args.end, args.period, exactMatch=args.exact)
     if args.plot is not None:

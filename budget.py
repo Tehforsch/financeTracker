@@ -53,7 +53,6 @@ def showRemainingMoney(ledger_, args):
 def extrapolate(budgetDict, args):
     delta = args.end - args.start
     numPeriods = Decimal(util.countPeriods(args.start, args.end, args.period)).to_integral_exact()
-    print(numPeriods)
     budgetDict[config.accountsIdentifier] = dict_multiply(budgetDict[config.accountsIdentifier], numPeriods)
     return budgetDict
 
