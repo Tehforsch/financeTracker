@@ -1,52 +1,9 @@
-from matplotlib import pyplot
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import itertools
-import time
+import numpy as np
+import matplotlib.pyplot as plt
 import util
 import config
 
-# defaultBeginning = "2016-04-01"
-# defaultEnd = time.strftime("%Y-%m-%d")
-# standardRegister = "register -M {} --collapse --empty | tr -s \" \" | cut -f {} -d \" \""
-# dataFile = "~/Dropbox/resource/finances/data/finances"
-
-# def ledgerBase():
-#     return "ledger -f {} -b {} -e {} --date-format %m-%Y {{}}".format(dataFile, defaultBeginning, defaultEnd)
-
-# def getDatesData(ledgerOutput):
-#     dates = getData(dateutil.parser.parse, ledgerOutput)
-#     # Somehow the above expression parses to the 13th of each month so fix this manually.
-#     dates = [datetime.date(date.year, date.month, 1) for date in dates]
-#     return dates
-
-# def getTotals(accounts, invert=False):
-#     return getRegisterColumn(accounts, 6, invert=invert)
-
-# def getIncrements(accounts, invert=False):
-#     return getRegisterColumn(accounts, 5, invert=invert)
-
-# def getRegisterColumn(accounts, column, invert=False):
-#     queryString = " ".join("^{}".format(account) for account in accounts)
-#     monthsForAccount = getDatesData(runLedgerCommand(standardRegister.format(queryString, 1)))
-#     data = getMoneyData(runLedgerCommand(standardRegister.format(queryString, column)), invert=invert)
-#     return fillEmptyMonths(monthsForAccount, data)
-
-# def fillEmptyMonths(monthsForAccount, data):
-#     # Since some accounts dont have transactions every month we need to manually put zeroes for 
-#     # every empty month (cant find a ledger feature that does this, --empty just works if
-#     # there have been transactions that add up to zero.
-#     allMonths = getDatesData(runLedgerCommand(standardRegister.format("expenses", 1)))
-#     return [data[monthsForAccount.index(month)] if month in monthsForAccount else 0 for month in allMonths]
-
-# def getDates(accounts):
-#     queryString = " ".join("^{}".format(account) for account in accounts)
-#     return getDatesData(runLedgerCommand(standardRegister.format(queryString, 1)))
-
-# def getAllMonths():
-#     # A little hacky but works
-#     return getDates("expenses")
 
 def datePlot(dates, dataSets, title="", xlabel="", ylabel="", labels=[""]):
     fig, ax = plt.subplots()

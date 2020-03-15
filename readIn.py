@@ -1,10 +1,10 @@
 from pathlib import Path
-from decimal import Decimal
 import datetime
 import csv
 import logging
 import inputHandler
 import config
+from amount import Amount
 
 class Entry:
     def __init__(self, line, keys, quantityNames):
@@ -25,7 +25,7 @@ class Entry:
 
     @staticmethod
     def readGermanAmountString(string):
-        return Decimal(string.replace(".", "").replace(",", "."))
+        return Amount(string.replace(".", "").replace(",", "."))
 
     def isSameTransaction(self, transaction):
         return [self.date, self.originator, self.amount] == [transaction.date, transaction.originator, transaction.amount]

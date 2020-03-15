@@ -1,7 +1,7 @@
 import ledger
 from ledger import Account, Transaction
 import yaml
-from yaml import UnsafeLoader
+from yaml import FullLoader
 
 def write(ledger_, outFile):
     with outFile.open("w") as f:
@@ -9,7 +9,7 @@ def write(ledger_, outFile):
 
 def readOld(inFile):
     with inFile.open("r") as f:
-        transactions = yaml.load(f, Loader=UnsafeLoader)
+        transactions = yaml.load(f, Loader=FullLoader)
         ledger_ = ledger.Ledger()
         for str_transaction in transactions:
             transaction = getTransaction(ledger_, str_transaction)
@@ -19,7 +19,7 @@ def readOld(inFile):
 
 def read(inFile):
     with inFile.open("r") as f:
-        ledger_ = yaml.load(f, Loader=UnsafeLoader)
+        ledger_ = yaml.load(f, Loader=FullLoader)
         x = ledger_.topAccount.reset()
         return ledger_
 

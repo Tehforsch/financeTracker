@@ -1,60 +1,40 @@
-import ledger
+from typing import Dict
+from pathlib import Path
 import yaml
+from yaml import FullLoader
 import config
 import util
 from queryResult import BudgetResult
-from decimal import Decimal
-from yaml import UnsafeLoader
+from amount import Amount
+from period import Period
+from util import QueryInput, FormatOptions
+from ledger import Ledger
 
-def getBudgetForTime(budgetFilename, startDate, endDate):
-    budgetDict = getBudgetDict(budgetFilename)
-
-def getBudgetDict(budgetFilename):
+def getBudgetDict(budgetFilename: Path) -> Dict:
     with budgetFilename.open("r") as f:
-        budgetDict = yaml.load(f, Loader=UnsafeLoader)
+        budgetDict = yaml.load(f, Loader=FullLoader)
         assert config.periodIdentifier in budgetDict
+        budgetDict[config.periodIdentifier] = Period(budgetDict[config.periodIdentifier])
         assert config.accountsIdentifier in budgetDict
     for (k, v) in budgetDict[config.accountsIdentifier].items():
-        budgetDict[config.accountsIdentifier][k] = Decimal(v.replace(config.currency, ""))
+        budgetDict[config.accountsIdentifier][k] = Amount(v.replace(config.currency, ""))
     return budgetDict
 
-def compareToBudget(ledger_, args):
-    budgetDict = getBudgetDict(args.budget)
-    accounts = budgetDict[config.accountsIdentifier]
-    if args.sum:
-        queryResult = ledger_.patternAccountQuery(accounts, args.start, args.end)
-        result = BudgetResult(queryResult, budgetDict)
-        budgetDict = extrapolate(budgetDict, args)
-        print(result)
-    else:
-        queryResult = ledger_.periodicAccountQuery(accounts, args.start, args.end, args.period, exactMatch=True)
-        for (period, result) in queryResult:
-            print(period)
-            result = BudgetResult(result, budgetDict)
-            print(result)
+def compareToBudget(ledger_: Ledger, budgetFilename: Path, queryInput: QueryInput, formatOptions: FormatOptions) -> None:
+    budgetDict = getBudgetDict(budgetFilename)
+    budgetDict = extrapolate(budgetDict, queryInput.period)
+    # WHY are namedtuples immutable? This code is awful but I am so tired
+    queryInput = QueryInput(budgetDict[config.accountsIdentifier], queryInput.timeframe, queryInput.period, queryInput.exactMatch)
+    queryResult = ledger_.periodicAccountQuery(queryInput)
+    for (timeframe, result) in queryResult:
+        result = BudgetResult(result, budgetDict)
+        print(timeframe)
+        print(result.toStr(formatOptions, factor=1))
 
-def showRemainingMoney(ledger_, args):
-    budgetDict = getBudgetDict(args.budget)
-    accounts = budgetDict[config.accountsIdentifier]
-    queryResult = ledger_.patternAccountQuery(accounts, args.start, args.end)
-    totalUsed = Decimal(0.0)
-    for acc in queryResult.topAccount.getAllAccounts():
-        if acc.name in accounts:
-            if args.invert is None:
-                factor = 1
-            else:
-                factor = -1 if acc.name in args.invert else 1
-            totalUsed += factor * acc.total
-    budgetDict = extrapolate(budgetDict, args)
-    totalAvailable = sum(budgetDict[config.accountsIdentifier].values())
-    print("Used: {}/{}{currency}".format(totalUsed, totalAvailable, currency=config.currency))
-    print("Left: {}{currency}".format(totalAvailable - totalUsed, currency=config.currency))
-
-def extrapolate(budgetDict, args):
-    delta = args.end - args.start
-    numPeriods = Decimal(util.countPeriods(args.start, args.end, args.period)).to_integral_exact()
-    budgetDict[config.accountsIdentifier] = dict_multiply(budgetDict[config.accountsIdentifier], numPeriods)
+def extrapolate(budgetDict: Dict, period: Period) -> Dict:
+    numPeriodsPerPrint = util.dividePeriods(period, budgetDict[config.periodIdentifier])
+    budgetDict[config.accountsIdentifier] = dict_multiply(budgetDict[config.accountsIdentifier], numPeriodsPerPrint)
     return budgetDict
 
-def dict_multiply(d, factor):
+def dict_multiply(d: Dict, factor: float) -> Dict:
     return dict((k, v * factor) for (k, v) in d.items())

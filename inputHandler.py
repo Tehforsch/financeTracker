@@ -2,13 +2,13 @@ import config
 import yaml
 from transaction import Transaction
 import datetime
-from decimal import Decimal
+from amount import Amount
 import util
-from yaml import UnsafeLoader
+from yaml import FullLoader
 
 def readAutomaticAccounts():
     with config.automaticAccountsFile.open("r") as f:
-        return yaml.load(f, Loader=UnsafeLoader)
+        return yaml.load(f, Loader=FullLoader)
 
 def writeAutomaticAccounts():
     yaml.dump(automaticAccounts, config.automaticAccountsFile.open("w"))
@@ -34,7 +34,7 @@ def getManualTransaction(ledger):
     source = ledger.getAccountFromStr(getAccountInput(ledger, None, defaultAccount="expenses:cash"))
     print("Target account?")
     target = ledger.getAccountFromStr(getAccountInput(ledger, None))
-    amount = Decimal(input("Amount you spent (negative if you were given): "))
+    amount = Amount(input("Amount you spent (negative if you were given): "))
     return Transaction(amount, source, target, config.defaultOriginator, date, "")
 
 def addManualTransaction(ledger):

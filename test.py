@@ -4,7 +4,7 @@ from ledger import Ledger
 from transaction import Transaction
 from account import Account
 import unittest
-from decimal import Decimal
+from amount import Amount
 from pathlib import Path
 import datetime
 
@@ -30,10 +30,10 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(ledger.topAccount.total, 0)
         result = ledger.patternAccountQuery(None, datetime.date(2000,1,2), datetime.date(2000,1,4))
         self.assertEqual(ledger.topAccount.total, 0)
-        self.assertEqual(result[1].amount, Decimal("3.3"))
+        self.assertEqual(result[1].amount, Amount("3.3"))
         result = ledger.patternAccountQuery(None, datetime.date(2000,1,1), datetime.date(2000,1,5))
         self.assertEqual(ledger.topAccount.total, 0)
-        self.assertEqual(result[1].amount, Decimal("5.5"))
+        self.assertEqual(result[1].amount, Amount("5.5"))
         result = ledger.patternTransactionQuery(None, datetime.date(2000,1,2), datetime.date(2000,1,4))
         self.assertEqual(len(result), 6)
 
@@ -48,7 +48,7 @@ def basicLedgerSetup():
 def oneSymmetricTransactionSetup():
     ledger = basicLedgerSetup()
     top = ledger.topAccount
-    amount = Decimal("1.1")
+    amount = Amount("1.1")
     t = Transaction(amount, top.subAccounts[0], top.subAccounts[1], None, None, None)
     ledger.addTransaction(t)
     return ledger
@@ -56,7 +56,7 @@ def oneSymmetricTransactionSetup():
 def oneAsymmetricTransactionSetup():
     ledger = basicLedgerSetup()
     top = ledger.topAccount
-    amount = Decimal("1.1")
+    amount = Amount("1.1")
     t = Transaction(amount, top, top.subAccounts[1], None, None, None)
     ledger.addTransaction(t)
     return ledger
@@ -64,7 +64,7 @@ def oneAsymmetricTransactionSetup():
 def someTransactionsSetup():
     ledger = basicLedgerSetup()
     top = ledger.topAccount
-    amount = Decimal("1.1")
+    amount = Amount("1.1")
     t1 = Transaction(amount, top, top.subAccounts[0], None, datetime.date(2000, 1, 1), None)
     t2 = Transaction(amount, top, top.subAccounts[0], None, datetime.date(2000, 1, 2), None)
     t3 = Transaction(amount, top, top.subAccounts[0], None, datetime.date(2000, 1, 3), None)

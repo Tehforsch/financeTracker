@@ -1,115 +1,93 @@
-from decimal import Decimal
-import config
-from collections import defaultdict
-import yaml
+from typing import List, Callable, Any, Dict, Iterable, Tuple
 import re
-import budget
-import logging
+import datetime
 import util
 from queryResult import TransactionQueryResult, AccountQueryResult
 from account import Account
+import config
 from transaction import Transaction
-import decimal
+from timeframe import Timeframe
+from util import FormatOptions, QueryInput
 
-def toList(func):
-    def wrapper(*args, **kwargs):
+def toList(func: Callable) -> Callable:
+    def wrapper(*args: List[Any], **kwargs: Dict[str, Any]) -> List:
         return list(func(*args, **kwargs))
     return wrapper
 
-def matchesAny(string, regexList, exactMatch=False):
+def matchesAny(string: str, regexList: List[str], exactMatch: bool = False) -> bool:
     if exactMatch:
         return any(pattern == string for pattern in regexList)
-    else:
-        return any(re.search(pattern, string) for pattern in regexList)
+    return any(re.search(pattern, string) for pattern in regexList)
 
-def isDirectSubAccount(potentialSubAccount, account):
+def isDirectSubAccount(potentialSubAccount: str, account: str) -> bool:
     return potentialSubAccount.startswith(account) and potentialSubAccount.replace(account, "").startswith(config.accountSeparator) and potentialSubAccount.replace(account, "").count(config.accountSeparator) == 1
 
+@toList
+def periodicQuery(queryFunction: Callable, queryInput: QueryInput) -> Iterable[Tuple[Timeframe, Any]]:
+    timeframes = util.subdivideTime(queryInput.timeframe, queryInput.period)
+    for timeframe_ in timeframes:
+        yield timeframe_, queryFunction(queryInput.changeTimeframe(timeframe_))
+
+def printPeriodicQuery(queryFunction: Callable, queryInput: QueryInput, formatOptions: FormatOptions) -> None:
+    result = periodicQuery(queryFunction, queryInput)
+    for (timeframe_, out) in result:
+        print(timeframe_)
+        print(out.toStr(formatOptions))
+
+def patternQuery(queryFunction: Callable, queryInput: QueryInput) -> Any:
+    def accountPredicate(account: Account) -> bool:
+        if queryInput.accountPatterns is None or queryInput.accountPatterns == []:
+            return True
+        return matchesAny(account.name, queryInput.accountPatterns, exactMatch=queryInput.exactMatch)
+    return queryFunction(transactionPredicate=queryInput.timeframe.containsTransaction, accountPredicate=accountPredicate)
+
 class Ledger:
-    def __init__(self):
+    def __init__(self) -> None:
         self.topAccount = Account("all")
-        self.transactions = []
+        self.transactions: List[Transaction] = []
 
-    def addTransaction(self, transaction):
+    def addTransaction(self, transaction: Transaction) -> None:
         self.transactions.append(transaction)
-        self.handleTransaction(transaction)
+        transaction.apply()
 
-    def handleTransaction(self, transaction):
-        transaction.sourceAccount.amount -= transaction.amount
-        transaction.targetAccount.amount += transaction.amount
-
-    def getFirstTransactionDate(self):
+    def getFirstTransactionDate(self) -> datetime.date:
         return min(transaction.date for transaction in self.transactions)
 
-    def getLastTransactionDate(self):
+    def getLastTransactionDate(self) -> datetime.date:
         return max(transaction.date for transaction in self.transactions)
 
-    # def filter(self, predicate):
-    #     newAccounts = Accounts(Decimal)
-    #     for key in self:
-    #         if predicate(key, self[key]):
-    #             newAccounts[key] = self[key]
-    #     return newAccounts
+    def printAverages(self, queryInput: QueryInput, formatOptions: FormatOptions) -> None:
+        result = self.patternAccountQuery(queryInput)
+        factor = 1.0 / util.countPeriods(queryInput.timeframe, queryInput.period)
+        print(result.toStr(formatOptions, factor=factor))
 
-    def printAverages(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        result = self.patternAccountQuery(accountPatterns, start, end, exactMatch=exactMatch)
-        factor = lambda _: 1.0 / util.countPeriods(start, end, period)
-        print(result.toStr(factor=factor, **kwargs))
+    def printAccounts(self, queryInput: QueryInput, formatOptions: FormatOptions) -> None:
+        printPeriodicQuery(self.patternAccountQuery, queryInput, formatOptions)
 
-    def printPeriodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        result = self.periodicQuery(queryFunction, accountPatterns, start, end, period, exactMatch=exactMatch)
-        for (period_, out) in result:
-            self.printPeriod(period_)
-            print(out.toStr(**kwargs))
+    def printTransactions(self, queryInput: QueryInput, formatOptions: FormatOptions) -> None:
+        printPeriodicQuery(self.patternTransactionQuery, queryInput, formatOptions)
 
-    def printAccounts(self, accountPatterns, start, end, period, printEmptyAccounts=False, exactMatch=False, sumAllAccounts=False, average=False):
-        self.printPeriodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, printEmptyAccounts=printEmptyAccounts, exactMatch=exactMatch, sumAllAccounts=sumAllAccounts)
+    def periodicAccountQuery(self, queryInput: QueryInput) -> List[Tuple[Timeframe, AccountQueryResult]]:
+        return periodicQuery(self.patternAccountQuery, queryInput)
 
-    def printTransactions(self, accountPatterns, start, end, period, exactMatch=False):
-        self.printPeriodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
-
-    def printPeriod(self, period):
-        print("{} -\n{}".format(period[0], period[1]))
-
-    def periodicTransactionQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        return self.periodicQuery(self.patternTransactionQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
-
-    def periodicAccountQuery(self, accountPatterns, start, end, period, exactMatch=False, **kwargs):
-        return self.periodicQuery(self.patternAccountQuery, accountPatterns, start, end, period, exactMatch=exactMatch)
-
-    @toList
-    def periodicQuery(self, queryFunction, accountPatterns, start, end, period, exactMatch=False):
-        periods = util.subdivideTime(start, end, period)
-        for period_ in periods:
-            yield period_, queryFunction(accountPatterns, period_[0], period_[1], exactMatch=exactMatch)
-
-    def patternAccountQuery(self, accountPatterns, start, end, exactMatch=False):
-        return self.patternQuery(self.accountQuery, accountPatterns, start, end, exactMatch=exactMatch)
+    def patternAccountQuery(self, queryInput: QueryInput) -> AccountQueryResult:
+        return patternQuery(self.accountQuery, queryInput)
     
-    def patternTransactionQuery(self, accountPatterns, start, end, exactMatch=False):
-        return self.patternQuery(self.transactionQuery, accountPatterns, start, end, exactMatch=exactMatch)
+    def patternTransactionQuery(self, queryInput: QueryInput) -> AccountQueryResult:
+        return patternQuery(self.transactionQuery, queryInput)
     
-    def patternQuery(self, function, accountPatterns, start, end, exactMatch=False):
-        isInThatTimeFrame = lambda transaction: (start <= transaction.date) and (transaction.date <= end)
-        # accountPredicate = lambda _:True if accountPatterns is None or accountPatterns == [] else lambda account: matchesAny(account.name, accountPatterns, exactMatch=exactMatch)
-        if accountPatterns is None or accountPatterns == []:
-            accountPredicate = lambda _: True
-        else:
-            accountPredicate = lambda account: matchesAny(account.name, accountPatterns, exactMatch=exactMatch)
-        return function(transactionPredicate=isInThatTimeFrame, accountPredicate=accountPredicate)
-    
-    def accountQuery(self, transactionPredicate=lambda _:True, accountPredicate=lambda _:True):
+    def accountQuery(self, transactionPredicate: Callable[[Transaction], bool] = lambda _:True, accountPredicate: Callable[[Account], bool] = lambda _:True) -> AccountQueryResult:
         self.topAccount.reset()
         for transaction in self.transactions:
             if transactionPredicate(transaction):
-                self.handleTransaction(transaction)
+                transaction.apply()
         return AccountQueryResult(self.topAccount, accountPredicate)
 
-    def transactionQuery(self, transactionPredicate=lambda _:True, accountPredicate=lambda _:True):
+    def transactionQuery(self, transactionPredicate: Callable[[Transaction], bool] = lambda _:True, accountPredicate: Callable[[Account], bool] = lambda _:True) -> TransactionQueryResult:
         transactions = [transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))]
         return TransactionQueryResult(sorted(transactions, key=lambda transaction: transaction.date))
 
-    def getAccountFromStr(self, fullName, account=None):
+    def getAccountFromStr(self, fullName: str, account: Account = None) -> Account:
         split = fullName.split(":")
         topName = split[0]
         subName = ":".join(split[1:])
@@ -126,5 +104,5 @@ class Ledger:
             else:
                 return self.getAccountFromStr(subName, nextAccount)
 
-    def getAccount(self, accountName):
+    def getAccount(self, accountName: str) -> Account:
         return self.topAccount.getAccount(accountName)

@@ -1,65 +1,63 @@
+from typing import List, Callable
 import config
-from decimal import Decimal
+from account import Account
+from transaction import Transaction
+from util import FormatOptions
 
 class TransactionQueryResult(list):
-    def __init__(self, values):
+    def __init__(self, values: List[Transaction]) -> None:
         super().__init__(values)
         self.sort(key=lambda transaction: transaction.date)
 
-    def toStr(self):
+    def toStr(self, formatOptions: FormatOptions) -> str:
         return "\n".join(str(x) for x in self)
 
 class AccountQueryResult():
-    def __init__(self, topAccount, accountPredicate):
+    def __init__(self, topAccount: Account, accountPredicate: Callable[[Account], bool]) -> None:
         self.topAccount = topAccount.clone()
         self.accountPredicate = accountPredicate
 
-    def toStr(self, printEmptyAccounts=False, sumAllAccounts=False, factor=lambda _: 1):
-        if sumAllAccounts:
-            summed = sum(factor(acc) * acc.amount for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc))
+    def toStr(self, formatOptions: FormatOptions, factor: float) -> str:
+        if formatOptions.sumAllAccounts:
+            summed = sum(acc.amount * factor for acc in self.topAccount.getAllAccounts() if self.accountPredicate(acc))
             return "{}: {}".format(self.topAccount.name, summed)
-        else:
-            predicate = lambda account: self.accountPredicate(account) and (printEmptyAccounts or not account.isEmpty())
-            return self.accountsToStr(predicate, factor=factor)
 
-    def accountsToStr(self, predicate, factor=lambda _: 1):
+        def predicate(account: Account) -> bool:
+            return self.accountPredicate(account) and (formatOptions.printEmptyAccounts or not account.isEmpty())
+        return self.accountsToStr(predicate, factor=factor)
+
+    def accountsToStr(self, predicate: Callable[[Account], bool], factor: float = 1) -> str:
         s = ""
         accountPadding = max(len(acc.name) for acc in self.topAccount.getAllAccounts())
-        amountPadding = max(len(str(getMultipliedTotal(acc, factor))) for acc in self.topAccount.getAllAccounts())
+        amountPadding = max(len(str(acc.total * factor)) for acc in self.topAccount.getAllAccounts())
         for account in sorted(self.topAccount.getAllAccounts(), key=lambda acc: acc.name):
             if not predicate(account):
                 continue
             numSpaces = account.level * 4
             indentation = numSpaces * " "
-            s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(indentation + account.rawName, str(getMultipliedTotal(account, factor)), accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency) + "\n"
+            s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency}".format(indentation + account.rawName, account.total * factor, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency) + "\n"
         return s
 
-    def __str__(self):
-        return self.toStr()
-
-    def getAccount(self, accountName):
+    def getAccount(self, accountName: str) -> Account:
         return self.topAccount.getAccount(accountName)
 
-def getMultipliedTotal(account, factor):
-    return Decimal(float(account.total) * factor(account.name)).quantize(Decimal("0.01"))
-
 class BudgetResult(AccountQueryResult):
-    def __init__(self, accountQueryResult, budget):
+    def __init__(self, accountQueryResult: AccountQueryResult, budget: dict) -> None:
         super().__init__(accountQueryResult.topAccount, accountQueryResult.accountPredicate)
         self.budget = budget
 
-    def accountsToStr(self, predicate):
+    def accountsToStr(self, predicate: Callable[[Account], bool], factor: float = 1) -> str:
         s = ""
         accountPadding = max(len(acc.name) for acc in self.topAccount.getAllAccounts())
         amountPadding = max(len(str(acc.total)) for acc in self.topAccount.getAllAccounts())
         for account in sorted(self.topAccount.getAllAccounts(), key=lambda acc: acc.name):
-            if (not predicate(account)) or (not account.name in self.budget[config.accountsIdentifier]):
+            if (not predicate(account)) or (account.name not in self.budget[config.accountsIdentifier]):
                 continue
             budgetAmount = self.budget[config.accountsIdentifier][account.name]
             if budgetAmount == 0:
                 percentage = 0
             else:
                 percentage = account.total / budgetAmount * 100
-            s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency} / {budgetAmount}{currency} ({percentage:.0f}%)".format(account.name, account.total, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency, budgetAmount=budgetAmount, percentage=percentage) + "\n"
+            amount = account.total * factor
+            s = s + "{:<{accountPadding}} \t {:>{amountPadding}}{currency} / {budgetAmount}{currency} ({percentage:.0f}%)".format(account.name, amount, accountPadding=accountPadding, amountPadding=amountPadding, currency=config.currency, budgetAmount=budgetAmount, percentage=percentage) + "\n"
         return s
-
