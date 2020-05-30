@@ -7,6 +7,7 @@ import config
 from timeframe import Timeframe
 from period import Period
 
+
 class QueryInput:
     def __init__(self, accountPatterns: List[str], timeframe: Timeframe, period: Period, exactMatch: bool) -> None:
         self.accountPatterns = accountPatterns
@@ -16,11 +17,14 @@ class QueryInput:
 
     def changeTimeframe(self, timeFrame: Timeframe) -> "QueryInput":
         return QueryInput(self.accountPatterns, timeFrame, self.period, self.exactMatch)
-        
+
+
 FormatOptions = namedtuple("FormatOptions", ["sumAllAccounts", "printEmptyAccounts"])
+
 
 def dateFromIsoformat(string: str) -> datetime.date:
     return datetime.datetime.strptime(string, config.defaultDateFormat).date()
+
 
 def subdivideTime(timeframe: Timeframe, period: Period) -> List[Timeframe]:
     """Subdivide the time between startTime and endTime given into
@@ -38,14 +42,17 @@ def subdivideTime(timeframe: Timeframe, period: Period) -> List[Timeframe]:
         today = afterOnePeriod
     return periods
 
+
 def getSharedSuperAccounts(string1: str, string2: str) -> List[str]:
     accounts1 = string1.split(config.accountSeparator)
     accounts2 = string2.split(config.accountSeparator)
     sharedAccounts = [x[0] for x in itertools.takewhile(lambda x: x[0] == x[1], zip(accounts1, accounts2))]
     return sharedAccounts
 
+
 def countPeriods(timeframe: Timeframe, period: Period) -> float:
     return (timeframe.end - timeframe.start).days / period.days
+
 
 def dividePeriods(period1: Period, period2: Period) -> float:
     return period1.days / period2.days

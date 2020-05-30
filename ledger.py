@@ -9,18 +9,27 @@ from transaction import Transaction
 from timeframe import Timeframe
 from util import FormatOptions, QueryInput
 
+
 def toList(func: Callable) -> Callable:
     def wrapper(*args: List[Any], **kwargs: Dict[str, Any]) -> List:
         return list(func(*args, **kwargs))
+
     return wrapper
+
 
 def matchesAny(string: str, regexList: List[str], exactMatch: bool = False) -> bool:
     if exactMatch:
         return any(pattern == string for pattern in regexList)
     return any(re.search(pattern, string) for pattern in regexList)
 
+
 def isDirectSubAccount(potentialSubAccount: str, account: str) -> bool:
-    return potentialSubAccount.startswith(account) and potentialSubAccount.replace(account, "").startswith(config.accountSeparator) and potentialSubAccount.replace(account, "").count(config.accountSeparator) == 1
+    return (
+        potentialSubAccount.startswith(account)
+        and potentialSubAccount.replace(account, "").startswith(config.accountSeparator)
+        and potentialSubAccount.replace(account, "").count(config.accountSeparator) == 1
+    )
+
 
 @toList
 def periodicQuery(queryFunction: Callable, queryInput: QueryInput) -> Iterable[Tuple[Timeframe, Any]]:
@@ -28,18 +37,22 @@ def periodicQuery(queryFunction: Callable, queryInput: QueryInput) -> Iterable[T
     for timeframe_ in timeframes:
         yield timeframe_, queryFunction(queryInput.changeTimeframe(timeframe_))
 
+
 def printPeriodicQuery(queryFunction: Callable, queryInput: QueryInput, formatOptions: FormatOptions) -> None:
     result = periodicQuery(queryFunction, queryInput)
     for (timeframe_, out) in result:
         print(timeframe_)
-        print(out.toStr(formatOptions))
+        print(out.toStr(formatOptions, factor=1))
+
 
 def patternQuery(queryFunction: Callable, queryInput: QueryInput) -> Any:
     def accountPredicate(account: Account) -> bool:
         if queryInput.accountPatterns is None or queryInput.accountPatterns == []:
             return True
         return matchesAny(account.name, queryInput.accountPatterns, exactMatch=queryInput.exactMatch)
+
     return queryFunction(transactionPredicate=queryInput.timeframe.containsTransaction, accountPredicate=accountPredicate)
+
 
 class Ledger:
     def __init__(self) -> None:
@@ -72,19 +85,27 @@ class Ledger:
 
     def patternAccountQuery(self, queryInput: QueryInput) -> AccountQueryResult:
         return patternQuery(self.accountQuery, queryInput)
-    
+
     def patternTransactionQuery(self, queryInput: QueryInput) -> AccountQueryResult:
         return patternQuery(self.transactionQuery, queryInput)
-    
-    def accountQuery(self, transactionPredicate: Callable[[Transaction], bool] = lambda _:True, accountPredicate: Callable[[Account], bool] = lambda _:True) -> AccountQueryResult:
+
+    def accountQuery(
+        self, transactionPredicate: Callable[[Transaction], bool] = lambda _: True, accountPredicate: Callable[[Account], bool] = lambda _: True
+    ) -> AccountQueryResult:
         self.topAccount.reset()
         for transaction in self.transactions:
             if transactionPredicate(transaction):
                 transaction.apply()
         return AccountQueryResult(self.topAccount, accountPredicate)
 
-    def transactionQuery(self, transactionPredicate: Callable[[Transaction], bool] = lambda _:True, accountPredicate: Callable[[Account], bool] = lambda _:True) -> TransactionQueryResult:
-        transactions = [transaction for transaction in self.transactions if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))]
+    def transactionQuery(
+        self, transactionPredicate: Callable[[Transaction], bool] = lambda _: True, accountPredicate: Callable[[Account], bool] = lambda _: True
+    ) -> TransactionQueryResult:
+        transactions = [
+            transaction
+            for transaction in self.transactions
+            if transactionPredicate(transaction) and (accountPredicate(transaction.sourceAccount) or accountPredicate(transaction.targetAccount))
+        ]
         return TransactionQueryResult(sorted(transactions, key=lambda transaction: transaction.date))
 
     def getAccountFromStr(self, fullName: str, account: Account = None) -> Account:

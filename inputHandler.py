@@ -6,12 +6,15 @@ from amount import Amount
 import util
 from yaml import FullLoader
 
+
 def readAutomaticAccounts():
     with config.automaticAccountsFile.open("r") as f:
         return yaml.load(f, Loader=FullLoader)
 
+
 def writeAutomaticAccounts():
     yaml.dump(automaticAccounts, config.automaticAccountsFile.open("w"))
+
 
 def formatAccountInput(inp):
     split = inp.split(":")
@@ -23,6 +26,7 @@ def formatAccountInput(inp):
         return ":".join(["assets"] + split)
     else:
         return ":".join(split)
+
 
 def getManualTransaction(ledger):
     print("Adding a new cash entry.")
@@ -37,11 +41,14 @@ def getManualTransaction(ledger):
     amount = Amount(input("Amount you spent (negative if you were given): "))
     return Transaction(amount, source, target, config.defaultOriginator, date, "")
 
+
 def addManualTransaction(ledger):
     ledger.addTransaction(getManualTransaction(ledger))
 
+
 def checkAccountExists(ledger, account):
     return account in (acc.name for acc in ledger.topAccount.getAllAccounts())
+
 
 def createAutomaticAccount(entry):
     decision = input("Create automatic account by originator, by usage or both?\n")
@@ -59,12 +66,9 @@ def createAutomaticAccount(entry):
         print("Usage for automatic account? (leave empty if you want to keep '{}')".format(entry.usage))
         automaticUsage = inputDefault(entry.usage)
     automaticAccount = formatAccountInput(input("Target account?\n"))
-    automaticAccounts.append({
-        "usage": automaticUsage,
-        "originator": automaticOriginator,
-        "account": automaticAccount
-        })
+    automaticAccounts.append({"usage": automaticUsage, "originator": automaticOriginator, "account": automaticAccount})
     return automaticAccount
+
 
 def inputDefault(defaultString):
     inp = input()
@@ -72,6 +76,7 @@ def inputDefault(defaultString):
         return defaultString
     else:
         return inp
+
 
 def getAccountInput(ledger, entry, canAddAutomatic=True, defaultAccount=None):
     print("Please enter account for this transaction (or '{}' to create automatic account):".format(config.addAutomaticAccountString))
@@ -95,8 +100,11 @@ def getAccountInput(ledger, entry, canAddAutomatic=True, defaultAccount=None):
     else:
         return accountInput
 
+
 def automaticAccountMatches(automaticAccount, entry):
-    return (automaticAccount["originator"] == "" or automaticAccount["originator"] in entry.originator) and (automaticAccount["usage"] == "" or automaticAccount["usage"] in entry.usage)
+    return (automaticAccount["originator"] == "" or automaticAccount["originator"] in entry.originator) and (
+        automaticAccount["usage"] == "" or automaticAccount["usage"] in entry.usage
+    )
 
 
 def getAccount(ledger, entry):
@@ -109,11 +117,16 @@ def getAccount(ledger, entry):
         account = getAccountInput(ledger, entry)
     return formatAccountInput(account)
 
+
 def getTransactionsFromCsvEntries(ledger, entries):
-    for entry in entries:
-        targetAccount = ledger.getAccountFromStr(getAccount(ledger, entry))
-        sourceAccount = ledger.getAccountFromStr(config.checkingAccount)
-        yield Transaction(entry.amount, sourceAccount, targetAccount, entry.originator, entry.date, entry.usage)
-    writeAutomaticAccounts()
+    try:
+        for entry in entries:
+            targetAccount = ledger.getAccountFromStr(getAccount(ledger, entry))
+            sourceAccount = ledger.getAccountFromStr(config.checkingAccount)
+            yield Transaction(entry.amount, sourceAccount, targetAccount, entry.originator, entry.date, entry.usage)
+    except KeyboardInterrupt:
+        writeAutomaticAccounts()
+        return
+
 
 automaticAccounts = readAutomaticAccounts()
