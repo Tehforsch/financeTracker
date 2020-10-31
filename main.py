@@ -74,10 +74,7 @@ def main():
         csvIo.write(ledger, args.journal)
     if args.budget is not None:
         queryInput = QueryInput(args.balance, Timeframe(args.start, args.end), args.period, args.exact)
-        if args.sum:
-            budget.showRemainingMoney(ledger, args)
-        else:
-            budget.compareToBudget(ledger, args.budget, queryInput, formatOptions)
+        budget.compareToBudget(ledger, args.budget, queryInput, formatOptions)
     if args.balance is not None:
         queryInput = QueryInput(args.balance, Timeframe(args.start, args.end), args.period, args.exact)
         if args.average:

@@ -27,6 +27,7 @@ backupFormat = "%Y-%m-%d-%H-%M-%S"
 
 day = "day"
 week = "week"
+fourweeks = "fourweeks"
 month = "month"
 year = "year"
 infinite = "infinite"

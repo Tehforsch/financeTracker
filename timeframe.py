@@ -1,6 +1,7 @@
 import datetime
 from transaction import Transaction
 
+
 class Timeframe:
     def __init__(self, start: datetime.date, end: datetime.date) -> None:
         self.start = start
@@ -11,3 +12,7 @@ class Timeframe:
 
     def containsTransaction(self, transaction: Transaction) -> bool:
         return (self.start <= transaction.date) and (transaction.date <= self.end)
+
+    @property
+    def days(self) -> int:
+        return (self.end - self.start).days

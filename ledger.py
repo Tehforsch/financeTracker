@@ -43,6 +43,7 @@ def printPeriodicQuery(queryFunction: Callable, queryInput: QueryInput, formatOp
     for (timeframe_, out) in result:
         print(timeframe_)
         print(out.toStr(formatOptions, factor=1))
+        # print(out.toStr(formatOptions, factor=1))
 
 
 def patternQuery(queryFunction: Callable, queryInput: QueryInput) -> Any:
