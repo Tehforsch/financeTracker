@@ -3,6 +3,7 @@ import datetime
 from amount import Amount
 from account import Account
 
+
 class Transaction:
     def __init__(self, amount: Amount, sourceAccount: Account, targetAccount: Account, originator: str, date: datetime.date, usage: str) -> None:
         self.amount = amount
@@ -25,6 +26,7 @@ class Transaction:
         sourceAccount = next(account for account in accounts if account.name == sourceAccountName)
         targetAccount = next(account for account in accounts if account.name == targetAccountName)
         date = datetime.date.fromisoformat(dateIso)
+        amount = amount.replace("€", "")
         return Transaction(Amount(amount), sourceAccount, targetAccount, originator, date, usage)
 
     def apply(self) -> None:

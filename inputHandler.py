@@ -111,7 +111,7 @@ def getAccount(ledger, entry):
     for automaticAccount in automaticAccounts:
         if automaticAccountMatches(automaticAccount, entry):
             account = automaticAccount["account"]
-            print("Found automatically assignable account: {}\n".format(account))
+            input("Found automatically assignable account: {} for entry:\n{}\n".format(account, entry))
             break
     else:
         account = getAccountInput(ledger, entry)
@@ -127,6 +127,7 @@ def getTransactionsFromCsvEntries(ledger, entries):
     except KeyboardInterrupt:
         writeAutomaticAccounts()
         return
+    writeAutomaticAccounts()
 
 
 automaticAccounts = readAutomaticAccounts()
