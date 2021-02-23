@@ -2,7 +2,6 @@ import argparse
 from typing import Dict
 from pathlib import Path
 import yaml
-from yaml import FullLoader
 import config
 import util
 from queryResult import BudgetResult
@@ -16,7 +15,7 @@ from amount import Amount
 
 def getBudgetDict(budgetFilename: Path) -> Dict:
     with budgetFilename.open("r") as f:
-        budgetDict = yaml.load(f, Loader=FullLoader)
+        budgetDict = yaml.load(f, Loader=SafeLoader)
         assert config.periodIdentifier in budgetDict
         budgetDict[config.periodIdentifier] = Period(budgetDict[config.periodIdentifier])
         assert config.accountsIdentifier in budgetDict
