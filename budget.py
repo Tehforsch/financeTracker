@@ -15,7 +15,7 @@ from amount import Amount
 
 def getBudgetDict(budgetFilename: Path) -> Dict:
     with budgetFilename.open("r") as f:
-        budgetDict = yaml.load(f, Loader=SafeLoader)
+        budgetDict = yaml.load(f, Loader=yaml.SafeLoader)
         assert config.periodIdentifier in budgetDict
         budgetDict[config.periodIdentifier] = Period(budgetDict[config.periodIdentifier])
         assert config.accountsIdentifier in budgetDict
