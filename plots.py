@@ -77,6 +77,10 @@ def plotExpensesIncome(ledger, timeframe, smooth=False):
     plotAccounts(ledger, [["expenses"], ["income"]], timeframe, "Month", "Monthly expenses [€]", ["Expenses", "Income"], smooth=smooth, invert=[False, True])
 
 
+def plotSalary(ledger, timeframe, smooth=False):
+    plotAccounts(ledger, [["income:job"]], timeframe, "Month", "Monthly salary [€]", ["Income"], smooth=smooth, invert=[True])
+
+
 def plotLivingLuxury(ledger, timeframe, smooth=False):
     allExpenses = [acc.name for acc in ledger.getAccount("expenses").getAllAccounts()]
     allExpenses.remove("expenses")
@@ -110,7 +114,9 @@ def doPlots(ledger, args):
 
 plots = {
     "networth": (plotNetworth, 0),
-    "expensesIncome": (plotExpensesIncome, 12),
+    "salary": (plotSalary, 0),
+    "expensesIncomeSmoothed": (plotExpensesIncome, 12),
+    "expensesIncome": (plotExpensesIncome, 0),
     "livingLuxury": (plotLivingLuxury, 12),
     "living": (plotLivingExpenses, 0),
     "luxury": (plotLuxuryExpenses, 0),
