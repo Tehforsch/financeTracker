@@ -36,6 +36,8 @@ class Entry:
 def readDefaultCsv(fileHandle, keys, quantityNames, delimiter=",", skip=0):
     reader = csv.reader(fileHandle, delimiter=delimiter)
     lines = [line for line in reader][skip:]
+    for line in lines:
+        print(line)
     lines = [Entry(line, keys, quantityNames) for line in lines]
     return lines
 
@@ -49,7 +51,7 @@ def getDibaCsv(dibaFile):
             "amount": "Betrag"
             }
     with dibaFile.open("r", encoding="latin1") as f:
-        return readDefaultCsv(f, keys, quantityNames, delimiter=";", skip=15)
+        return readDefaultCsv(f, keys, quantityNames, delimiter=";", skip=14)
 
 def readEntriesFromCsvFile(args, csvFile):
     # For now only implemented for DiBa specific csv files.
