@@ -28,6 +28,7 @@ class Entry:
         return Amount(string.replace(".", "").replace(",", "."))
 
     def isSameTransaction(self, transaction):
+        assert type(self.amount) == Amount and type(transaction.amount) == Amount, f"Wrong types: {type(self.amount)} {type(transaction.amount)}"
         return [self.date, self.originator, self.amount] == [transaction.date, transaction.originator, transaction.amount]
 
     def __str__(self):

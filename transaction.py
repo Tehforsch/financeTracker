@@ -12,6 +12,7 @@ class Transaction:
         self.originator = originator
         self.usage = usage
         self.date = date
+        assert type(self.amount) == Amount
 
     def __str__(self) -> str:
         # return "{}\n{}\n{}\n{}".format(self.date, self.originator, self.usage, self.amount)

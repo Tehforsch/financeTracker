@@ -18,3 +18,6 @@ class Amount(Decimal):
 
     def __mul__(self, other: Union[int, Decimal, float, "Amount"]) -> "Amount":
         return Amount(Decimal(self) * Decimal(other))
+
+    def __neg__(self):
+        return Amount(-Decimal(self))
